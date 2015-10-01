@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +21,9 @@ import javax.json.JsonException;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
+import javax.json.JsonWriter;
+import javax.json.JsonWriterFactory;
+import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonParsingException;
 
 import org.apache.commons.csv.CSVFormat;
@@ -34,6 +38,10 @@ public class Parser {
 
 	public static final String CANDSET_HEADER = "pairID:INTEGER,A.id:TEXT,B.id:TEXT";
 	public static final String GOLD_HEADER = "pairID:INTEGER,A.id:TEXT,B.id:TEXT,label:INTEGER";
+
+	public static final String[] attributesToignore = {"Item ID", "GTIN", "Product Segment",
+		"Warranty Length", "Country of Origin: Components", "Category", "Composite Wood Code", "Warranty Information",
+		"Type", "Video Game Platform"};
 
 	private static Set<String> getAttributeNames(String attrs) throws JsonParsingException {
 		Set<String> attributeNames = new HashSet<String>();
@@ -54,7 +62,7 @@ public class Parser {
 		}
 		return attributeNames;
 	}
-	
+
 	private static String getHeader(Set<String> attributes) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("id");
@@ -532,7 +540,7 @@ public class Parser {
 				samplePairsBw.write("Walmart item (id: " + id1 + ")");
 				samplePairsBw.newLine();
 				samplePairsBw.newLine();
-				
+
 				for (String s: attributes) {
 					String val = attributeValuePairsA.get(s);
 					if (null == val || val.isEmpty()) {
@@ -548,7 +556,7 @@ public class Parser {
 				samplePairsBw.write("Vendor item (id: " + id2 + ")");
 				samplePairsBw.newLine();
 				samplePairsBw.newLine();
-				
+
 				for (String s: attributes) {
 					String val = attributeValuePairsB.get(s);
 					if (null == val || val.isEmpty()) {
@@ -596,11 +604,11 @@ public class Parser {
 			try {
 				Map<String, String> attributeValuePairsA = parseJsonBlob(attr1, attributes);
 				Map<String, String> attributeValuePairsB = parseJsonBlob(attr2, attributes);
-				
+
 				samplePairsBw.write("Walmart item (id: " + id1 + ")");
 				samplePairsBw.newLine();
 				samplePairsBw.newLine();
-				
+
 				for (String s: attributes) {
 					String val = attributeValuePairsA.get(s);
 					if (null == val || val.isEmpty()) {
@@ -613,11 +621,11 @@ public class Parser {
 				}
 				samplePairsBw.write("-----------------------------------------");
 				samplePairsBw.newLine();
-				
+
 				samplePairsBw.write("Vendor item (id: " + id2 + ")");
 				samplePairsBw.newLine();
 				samplePairsBw.newLine();
-				
+
 				for (String s: attributes) {
 					String val = attributeValuePairsB.get(s);
 					if (null == val || val.isEmpty()) {
@@ -737,23 +745,23 @@ public class Parser {
 			String line;
 
 			Map<String, Integer> attribsCount = new HashMap<String, Integer>();
-			
+
 			int badRecords = 0;
 			int id = 1;
 			while((line = br.readLine()) != null) {
 				String[] vals = line.split("\t");
 				String itemJson = vals[0];
 				try {
-				Set<String> attribNames = getAttributeNames(itemJson, "product_attributes");
-				for (String s: attribNames) {
-					if (attribsCount.containsKey(s)) {
-						int value = attribsCount.get(s);
-						attribsCount.put(s, value + 1);
+					Set<String> attribNames = getAttributeNames(itemJson, "product_attributes");
+					for (String s: attribNames) {
+						if (attribsCount.containsKey(s)) {
+							int value = attribsCount.get(s);
+							attribsCount.put(s, value + 1);
+						}
+						else {
+							attribsCount.put(s, 1);
+						}
 					}
-					else {
-						attribsCount.put(s, 1);
-					}
-				}
 				}
 				catch (JsonException e) {
 					badRecords++;
@@ -779,6 +787,454 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
+
+	private static boolean extract(JsonObject obj, String[] attributesToExclude) {
+		for (String s: attributesToExclude) {
+			if (obj.containsKey(s)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static void parseElectronicsItemPair(String outputPath, String[] attributesToExclude, String attributeToExtract) {
+		String dataFilePath = "/Users/patron/sanjib_electronics_train.txt";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(dataFilePath));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath, true));
+			Map<String, Object> properties = new HashMap<String, Object>(1);
+			properties.put(JsonGenerator.PRETTY_PRINTING, true);
+			JsonWriterFactory writerFactory = Json.createWriterFactory(properties);
+			JsonWriter jsonWriter;
+
+			int badRecords = 0;
+			int pairsSeen = 0;
+			int id = 1;
+			String line;
+			while((line = br.readLine()) != null) {
+				String[] vals = line.split("\\?");
+				String pairId = vals[0];
+				String id1 = vals[1];
+				String item1json = vals[2];
+				//System.out.println(item1json);
+				JsonReader reader1 = Json.createReader(new StringReader(item1json));
+				try {
+					JsonObject obj1 = reader1.readObject();
+					if (extract(obj1, attributesToExclude)) {
+						Set<String> keySet1 = new HashSet<String>(obj1.keySet());
+						for (String s: attributesToignore) {
+							keySet1.remove(s);
+						}
+						for (String s: attributesToExclude) {
+							keySet1.remove(s);
+						}
+						//System.out.println("Obj1 Keyset: " + obj1.keySet());
+						//		    		for (String key: attributesToignore) {
+						//		    			obj1.remove(key);
+						//		    		}
+						//System.out.println("No. of keys: " + obj.keySet());
+						bw.write(id + ". Walmart product (item id:" + id1 + ")");
+						bw.newLine();
+						bw.write("****************************************");
+						bw.newLine();
+						for (String key: keySet1) {
+							JsonValue value = obj1.get(key);
+							bw.write(key + ": " + value);
+							bw.newLine();
+							bw.newLine();
+						}
+						bw.write(attributeToExtract + ": ");
+						bw.newLine();
+						bw.write("*******************************************************");
+						bw.newLine();
+						bw.write("*******************************************************");
+						bw.newLine();
+						bw.newLine();
+						id++;		
+					}
+				}
+				catch (JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				String id2 = vals[3];
+				String item2json = vals[4];
+				JsonReader reader2 = Json.createReader(new StringReader(item2json));
+				try {
+					JsonObject obj2 = reader2.readObject();
+					if (extract(obj2, attributesToExclude)) {
+						Set<String> keySet2 = new HashSet<String>(obj2.keySet());
+						for (String s: attributesToignore) {
+							keySet2.remove(s);
+						}
+						for (String s: attributesToExclude) {
+							keySet2.remove(s);
+						}
+						//	    		System.out.println("obj2 keyset: " + obj2.keySet());
+						//	    		System.out.println("obj2 contains Item ID: " + obj2.containsKey("Item ID"));
+						//	    		System.out.println(obj2.get("Item ID"));
+						//	    		for (String key: attributesToignore) {
+						//	    			obj2.remove(key);
+						//	    		}
+						//System.out.println(obj2.keySet());
+						bw.write(id + ". Vendor product (item id:" + id2 + ")");
+						bw.newLine();
+						bw.write("***************************************");
+						bw.newLine();
+						for (String key: keySet2) {
+							JsonValue value = obj2.get(key);
+							bw.write(key + ": " + value);
+							bw.newLine();
+							bw.newLine();
+						}
+						bw.write(attributeToExtract + ": ");
+						bw.newLine();
+						bw.write("*******************************************************");
+						bw.newLine();
+						bw.write("*******************************************************");
+						bw.newLine();
+						bw.newLine();
+						String label = vals[5];
+						//				System.out.println("pairId: " + pairId);
+						//				System.out.println("id1: " + id1);
+						//				System.out.println("id2: " + id2);
+						//				System.out.println("label: " + label);
+						id++;
+					}
+				}
+				catch(JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				pairsSeen++;
+				if (id > 600) break;
+			}
+			//jsonWriter.close();
+			br.close();
+			bw.close();
+			System.out.println();
+			System.out.println("No. of bad records: " + badRecords);
+			System.out.println("No. of pairs seen " + pairsSeen);
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private static Set<String> doNotExtract(JsonObject obj, String[] attributesToExclude) {
+		Set<String> attributesPresent = new HashSet<String>();
+		for (String s: attributesToExclude) {
+			if (obj.containsKey(s)) {
+				attributesPresent.add(s);
+			}
+		}
+		return attributesPresent;
+	}
+	
+	private static void prepareSampleForStudents(String outputPath, String[] attributesToExclude, String[] attributesToExtract) {
+		String dataFilePath = "/u/s/a/sanjibkd/Downloads/sanjib_electronics_train_325.txt";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(dataFilePath));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath, true));
+			Map<String, Object> properties = new HashMap<String, Object>(1);
+			properties.put(JsonGenerator.PRETTY_PRINTING, true);
+			JsonWriterFactory writerFactory = Json.createWriterFactory(properties);
+			JsonWriter jsonWriter;
+
+			int badRecords = 0;
+			int pairsSeen = 0;
+			int id = 1;
+			String line;
+			while((line = br.readLine()) != null) {
+				String[] vals = line.split("\\?");
+				String pairId = vals[0];
+				String id1 = vals[1];
+				String item1json = vals[2];
+				//System.out.println(item1json);
+				JsonReader reader1 = Json.createReader(new StringReader(item1json));
+				try {
+					JsonObject obj1 = reader1.readObject();
+					//Set<String> attributesPresent = doNotExtract(obj1, attributesToExtract);
+					//if (attributesPresent.size() != attributesToExtract.length) {
+						Set<String> keySet1 = new HashSet<String>(obj1.keySet());
+						for (String s: attributesToignore) {
+							keySet1.remove(s);
+						}
+//						for (String s: attributesToExclude) {
+//							keySet1.remove(s);
+//						}
+//						for (String s: attributesPresent) {
+//							keySet1.add(s);
+//						}
+						//System.out.println("Obj1 Keyset: " + obj1.keySet());
+						//		    		for (String key: attributesToignore) {
+						//		    			obj1.remove(key);
+						//		    		}
+						//System.out.println("No. of keys: " + obj.keySet());
+						bw.write(id + ". Walmart product (item id:" + id1 + ")");
+						bw.newLine();
+						//bw.write("****************************************");
+						//bw.newLine();
+						for (String key: keySet1) {
+							JsonValue value = obj1.get(key);
+							bw.write(key + ": " + value);
+							bw.newLine();
+							bw.newLine();
+						}
+						for (String s: attributesToExtract) {
+//							if (attributesPresent.contains(s)) {
+//								continue;
+//							}
+							bw.write(s.toUpperCase() + ": ");
+							bw.newLine();
+						}
+						bw.write("*********************************************************************************************************");
+						bw.newLine();
+//						bw.write("*******************************************************");
+//						bw.newLine();
+						bw.newLine();
+						id++;		
+					//}
+				}
+				catch (JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				String id2 = vals[3];
+				String item2json = vals[4];
+				JsonReader reader2 = Json.createReader(new StringReader(item2json));
+				try {
+					JsonObject obj2 = reader2.readObject();
+					//Set<String> attributesPresent = doNotExtract(obj2, attributesToExtract);
+					//if (attributesPresent.size() != attributesToExtract.length) {
+						Set<String> keySet2 = new HashSet<String>(obj2.keySet());
+						for (String s: attributesToignore) {
+							keySet2.remove(s);
+						}
+//						for (String s: attributesToExclude) {
+//							keySet2.remove(s);
+//						}
+//						for (String s: attributesPresent) {
+//							keySet2.add(s);
+//						}
+						//	    		System.out.println("obj2 keyset: " + obj2.keySet());
+						//	    		System.out.println("obj2 contains Item ID: " + obj2.containsKey("Item ID"));
+						//	    		System.out.println(obj2.get("Item ID"));
+						//	    		for (String key: attributesToignore) {
+						//	    			obj2.remove(key);
+						//	    		}
+						//System.out.println(obj2.keySet());
+						bw.write(id + ". Vendor product (item id:" + id2 + ")");
+						bw.newLine();
+						//bw.write("***************************************");
+						//bw.newLine();
+						for (String key: keySet2) {
+							JsonValue value = obj2.get(key);
+							bw.write(key + ": " + value);
+							bw.newLine();
+							bw.newLine();
+						}
+						for (String s: attributesToExtract) {
+//							if (attributesPresent.contains(s)) {
+//								continue;
+//							}
+							bw.write(s.toUpperCase() + ": ");
+							bw.newLine();
+						}
+						bw.write("*********************************************************************************************************");
+						bw.newLine();
+//						bw.write("*******************************************************");
+//						bw.newLine();
+						bw.newLine();
+						String label = vals[5];
+						//				System.out.println("pairId: " + pairId);
+						//				System.out.println("id1: " + id1);
+						//				System.out.println("id2: " + id2);
+						//				System.out.println("label: " + label);
+						id++;
+					//}
+				}
+				catch(JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				pairsSeen++;
+				//if (id > 600) break;
+			}
+			//jsonWriter.close();
+			br.close();
+			bw.close();
+			System.out.println();
+			System.out.println("No. of bad records: " + badRecords);
+			System.out.println("No. of pairs seen " + pairsSeen);
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private static void printTuple(BufferedWriter bw, JsonObject obj) throws IOException {
+		Set<String> keySet = new HashSet<String>(obj.keySet());
+		for (String s: attributesToignore) {
+			keySet.remove(s);
+		}
+		for (String key: keySet) {
+			JsonValue value = obj.get(key);
+			bw.write(key + ": " + value);
+			bw.newLine();
+			bw.newLine();
+		}
+	}
+	
+	/*
+	private static void prepareTuplePairsForStudents(String outputPath) {
+		String dataFilePath = "/u/s/a/sanjibkd/Downloads/sanjib_electronics_train_325.txt";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(dataFilePath));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath, true));
+			Map<String, Object> properties = new HashMap<String, Object>(1);
+			properties.put(JsonGenerator.PRETTY_PRINTING, true);
+			JsonWriterFactory writerFactory = Json.createWriterFactory(properties);
+			JsonWriter jsonWriter;
+
+			int badRecords = 0;
+			int pairsSeen = 0;
+			int id = 1;
+			String line;
+			while((line = br.readLine()) != null) {
+				String[] vals = line.split("\\?");
+				String pairId = vals[0];
+				String id1 = vals[1];
+				String item1json = vals[2];
+				//System.out.println(item1json);
+				JsonReader reader1 = Json.createReader(new StringReader(item1json));
+				String id2 = vals[3];
+				String item2json = vals[4];
+				JsonReader reader2 = Json.createReader(new StringReader(item2json));
+				try {
+					JsonObject obj1 = reader1.readObject();
+					JsonObject obj2 = reader2.readObject();
+					
+					bw.write("Product pair #" + (pairsSeen + 1));
+					bw.newLine();
+					bw.write("Walmart product (item id:" + id1 + ")");
+					bw.newLine();
+					printTuple(bw, obj1);
+					bw.newLine();
+					bw.write("Walmart product (item id:" + id1 + ")");
+					bw.newLine();
+					printTuple(bw, obj1);
+					bw.newLine();
+					
+					bw.write("*********************************************************************************************************");
+					bw.newLine();
+//						bw.write("*******************************************************");
+//						bw.newLine();
+						bw.newLine();
+						id++;		
+					//}
+				}
+				catch (JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				try {
+					
+					//Set<String> attributesPresent = doNotExtract(obj2, attributesToExtract);
+					//if (attributesPresent.size() != attributesToExtract.length) {
+						Set<String> keySet2 = new HashSet<String>(obj2.keySet());
+						for (String s: attributesToignore) {
+							keySet2.remove(s);
+						}
+//						for (String s: attributesToExclude) {
+//							keySet2.remove(s);
+//						}
+//						for (String s: attributesPresent) {
+//							keySet2.add(s);
+//						}
+						//	    		System.out.println("obj2 keyset: " + obj2.keySet());
+						//	    		System.out.println("obj2 contains Item ID: " + obj2.containsKey("Item ID"));
+						//	    		System.out.println(obj2.get("Item ID"));
+						//	    		for (String key: attributesToignore) {
+						//	    			obj2.remove(key);
+						//	    		}
+						//System.out.println(obj2.keySet());
+						bw.write(id + ". Vendor product (item id:" + id2 + ")");
+						bw.newLine();
+						//bw.write("***************************************");
+						//bw.newLine();
+						for (String key: keySet2) {
+							JsonValue value = obj.get(key);
+							bw.write(key + ": " + value);
+							bw.newLine();
+							bw.newLine();
+						}
+						for (String s: attributesToExtract) {
+//							if (attributesPresent.contains(s)) {
+//								continue;
+//							}
+							bw.write(s.toUpperCase() + ": ");
+							bw.newLine();
+						}
+						bw.write("*********************************************************************************************************");
+						bw.newLine();
+//						bw.write("*******************************************************");
+//						bw.newLine();
+						bw.newLine();
+						String label = vals[5];
+						//				System.out.println("pairId: " + pairId);
+						//				System.out.println("id1: " + id1);
+						//				System.out.println("id2: " + id2);
+						//				System.out.println("label: " + label);
+						id++;
+					//}
+				}
+				catch(JsonParsingException e) {
+					badRecords++;
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				pairsSeen++;
+				//if (id > 600) break;
+			}
+			//jsonWriter.close();
+			br.close();
+			bw.close();
+			System.out.println();
+			System.out.println("No. of bad records: " + badRecords);
+			System.out.println("No. of pairs seen " + pairsSeen);
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	*/
 	
 	private static void parseRuleEvals() {
 		String ruleEvalsFilePath = "ruleEvalsCopy.txt";
@@ -947,7 +1403,7 @@ public class Parser {
 						System.out.println("pnMatch: " + pnMatch
 								+ ", psdMatch: " + psdMatch + ", pldMatch: " + pldMatch);
 					}
-					*/
+					 */
 				}
 				printCsvRecord(outPrinter, r, label);
 			}
@@ -1021,12 +1477,12 @@ public class Parser {
 						numPairsCleaned++;
 						continue;
 					}
-					
+
 					if ("19500507".equals(id1) && "19500425#eBags".equals(id2)) {
 						System.out.println("pnMatch: " + pnMatch
 								+ ", psdMatch: " + psdMatch + ", pldMatch: " + pldMatch);
 					}
-					
+
 				}
 				printCsvRecord(outPrinter, r, label);
 			}
@@ -1038,7 +1494,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+	/*
 	private static void sampleData(int numPositives, int numNegatives,
 			List<String> attributesToConcat) {
 		String trainFilePath = "trainPnPsdPld2.csv";
@@ -1142,6 +1598,8 @@ public class Parser {
 		}
 		samplePairsBw.close();
 	}
+	 */
+
 	
 	public static void main(String[] args) {
 		//parseItems();
@@ -1149,28 +1607,37 @@ public class Parser {
 		//parseTrainTestItemPairs();
 		//parseRuleEvals();
 		//applyRuleOnCrossProduct();
-//		List<String> attributes = new ArrayList<String>();
-//		attributes.add("Product Name");
-//		attributes.add("Product Short Description");
-//		attributes.add("Product Long Description");
-//		attributes.add("Product Segment");
-//		attributes.add("Product Type");
-//		attributes.add("Brand");
-//		attributes.add("Manufacturer");
-//		attributes.add("Color");
-//		attributes.add("Actual Color");
-//		attributes.add("Assembled Product Length");
-//		attributes.add("Assembled Product Width");
-//		attributes.add("Assembled Product Height");
-//		attributes.add("UPC");
-//		attributes.add("Manufacturer Part Number");
-//		try {
-//			sampleExamplePairs(0, 50, attributes);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//		List<String> attributes = new ArrayList<String>();
+		//		attributes.add("Product Name");
+		//		attributes.add("Product Short Description");
+		//		attributes.add("Product Long Description");
+		//		attributes.add("Product Segment");
+		//		attributes.add("Product Type");
+		//		attributes.add("Brand");
+		//		attributes.add("Manufacturer");
+		//		attributes.add("Color");
+		//		attributes.add("Actual Color");
+		//		attributes.add("Assembled Product Length");
+		//		attributes.add("Assembled Product Width");
+		//		attributes.add("Assembled Product Height");
+		//		attributes.add("UPC");
+		//		attributes.add("Manufacturer Part Number");
+		//		try {
+		//			sampleExamplePairs(0, 50, attributes);
+		//		} catch (IOException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		}
 		//cleanupLabeledPairs2();
-		parseElectronicsItems();
+		String outputPath = "/u/s/a/sanjibkd/Downloads/6.txt";
+		String[] attributesToExclude = {};
+		String[] attributesToExtract1 = {"Brand", "Manufacturer"};
+		String[] attributesToExtract2 = {"Model", "Screen Size"};
+		String[] attributesToExtract3 = {"Color", "Package Quantity"};
+		String[] attributesToExtract4 = {"Length", "Width", "Height", "Size"};
+		String[] attributesToExtract5 = {"Weight", "Material"};
+		String[] attributesToExtract6 = {"Laptop Compartment Dimensions", "Print Color", "Page Yield"};
+		String[] attributesToExtract7 = {"MPN", "UPC"};
+		prepareSampleForStudents(outputPath, attributesToExclude, attributesToExtract6);
 	}
 }
