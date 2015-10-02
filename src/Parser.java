@@ -5,15 +5,18 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -788,6 +791,110 @@ public class Parser {
 		}
 	}
 
+	private static void addIncr(Map<String, Integer> dictionary, String key) {
+		int value = 0;
+		if (dictionary.containsKey(key)) {
+			value = dictionary.get(key);
+		}
+		dictionary.put(key, value + 1);
+	}
+	
+	private static void displayMap(Map<String, Integer> map) {
+		for (String k: map.keySet()) {
+			int v = map.get(k);
+			System.out.println(k + ": " + v);
+		}
+	}
+	
+	private static void dumpMap(String outputFileName, Map<String, Integer> map) throws FileNotFoundException {
+		PrintWriter pw = new PrintWriter(outputFileName);
+		for (String k: map.keySet()) {
+			int v = map.get(k);
+			pw.println(k + "\t" + v);
+		}
+		pw.close();
+	}
+	
+	private static void createDictionary(String inputFileName, String outputFileName, String attributeName) throws FileNotFoundException {
+		Map<String, Integer> dictionary = new HashMap<String, Integer>(); // attribute value -> count
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+			int badRecords = 0; // invalid JSON
+			int badRecords1 = 0; // no "product_attributes"
+			int badRecords2 = 0; // no "brand"
+			int badRecords3 = 0; // no "values"
+			int id = 0;
+			String line;
+			while((line = br.readLine()) != null) {
+				String[] vals = line.split("\t");
+				String itemJson = vals[0];
+				try {
+					JsonReader reader = Json.createReader(new StringReader(itemJson));
+					JsonObject obj = reader.readObject();
+					if (obj.containsKey("product_attributes")) {
+						//System.out.println("Found product_attributes");
+						JsonObject obj1 = obj.getJsonObject("product_attributes");
+						if (null == obj1) {
+							badRecords1++;
+							id++;
+							continue;
+						}
+						JsonObject obj2 = obj1.getJsonObject(attributeName);
+						if (null == obj2) {
+							badRecords2++;
+							id++;
+							continue;
+						}
+						JsonArray arr = obj2.getJsonArray("values");
+						if (null == arr) {
+							badRecords3++;
+							id++;
+							continue;
+						}
+						for (int i = 0; i < arr.size(); i++) {
+							JsonObject obj3 = arr.getJsonObject(i);
+							if (obj3.containsKey("isPrimary")) {
+								//System.out.println("Found isPrimary");
+								if ("true".equals(obj3.getString("isPrimary"))) {
+									String value = obj3.getString("value");
+									addIncr(dictionary, value);
+									break;
+								}
+							}
+ 						}
+					}
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				id++;
+				//if (id > 2) break;
+			}
+			br.close();
+			System.out.println("No. of records seen: " + id);
+			System.out.println("No. of records with Invalid JSON: " + badRecords);
+			System.out.println("No. of records with missing product attributes: " + badRecords1);
+			System.out.println("No. of records with missing brand: " + badRecords2);
+			System.out.println("No. of records with missing brand values: " + badRecords3);
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		dumpMap(outputFileName,dictionary);
+	}
+	
+	private static Map<String, Integer> sortByValue (Map<String, Integer> map) {
+		ValueComparator vc =  new ValueComparator(map);
+		Map<String,Integer> sortedMap = new TreeMap<String,Integer>(vc);
+		sortedMap.putAll(map);
+		return sortedMap;
+	}
+	
 	private static boolean extract(JsonObject obj, String[] attributesToExclude) {
 		for (String s: attributesToExclude) {
 			if (obj.containsKey(s)) {
@@ -1638,6 +1745,14 @@ public class Parser {
 		String[] attributesToExtract5 = {"Weight", "Material"};
 		String[] attributesToExtract6 = {"Laptop Compartment Dimensions", "Print Color", "Page Yield"};
 		String[] attributesToExtract7 = {"MPN", "UPC"};
-		prepareSampleForStudents(outputPath, attributesToExclude, attributesToExtract6);
+		//prepareSampleForStudents(outputPath, attributesToExclude, attributesToExtract6);
+		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
+		String outputFileName = "/u/s/a/sanjibkd/Downloads/brand_dictionary.txt";
+		try {
+			createDictionary(inputFileName, outputFileName, "brand");
+		}
+		catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 }
