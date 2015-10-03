@@ -806,6 +806,13 @@ public class Parser {
 		}
 	}
 	
+	private static void dumpMaps(String[] outputFileNames, List<Map<String, Integer>> maps) throws FileNotFoundException {
+		for (int i = 0; i < outputFileNames.length; i++) {
+			System.out.println("Output dictionary file: " + outputFileNames[i]);
+			dumpMap(outputFileNames[i], maps.get(i));
+		}
+	}
+	
 	private static void dumpMap(String outputFileName, Map<String, Integer> map) throws FileNotFoundException {
 		PrintWriter pw = new PrintWriter(outputFileName);
 		for (String k: map.keySet()) {
@@ -813,6 +820,101 @@ public class Parser {
 			pw.println(k + "\t" + v);
 		}
 		pw.close();
+		System.out.println("Size of dictionary: " + map.size());
+	}
+	
+	private static void createDictionaries(String[] inputFileNames, String[] outputFileNames, String[] attributeNames) throws FileNotFoundException {
+		List<Map<String, Integer>> dictionaries = new ArrayList<Map<String, Integer>>(attributeNames.length);
+		for (int i = 0; i < attributeNames.length; i++) {
+			dictionaries.add(new HashMap<String, Integer>());
+		}
+		try {
+			for (int i = 0; i < inputFileNames.length; i++) {
+				String inputFileName = inputFileNames[i];
+				BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+				int badRecords = 0; // invalid JSON
+				int badRecords1 = 0; // no "product_attributes"
+				int[] badRecords2 = new int[attributeNames.length]; // no attributeName
+				for (int k = 0; k < badRecords2.length; k++) {
+					badRecords2[k] = 0;
+				}
+				int badRecords3 = 0; // no "values"
+				int id = 0;
+				String line;
+				while((line = br.readLine()) != null) {
+					if (id % 100000 == 0) {
+						System.out.println("Processed " + id + " records of file " + inputFileName);
+					}
+					String[] vals = line.split("\t");
+					String itemJson = vals[0];
+					try {
+						JsonReader reader = Json.createReader(new StringReader(itemJson));
+						JsonObject obj = reader.readObject();
+						if (obj.containsKey("product_attributes")) {
+							//System.out.println("Found product_attributes");
+							JsonObject obj1 = obj.getJsonObject("product_attributes");
+							if (null == obj1) {
+								badRecords1++;
+								id++;
+								continue;
+							}
+							for (int j = 0; j < attributeNames.length; j++) {
+								String attributeName = attributeNames[j];
+								JsonObject obj2 = obj1.getJsonObject(attributeName);
+								if (null == obj2) {
+									badRecords2[j]++;
+									continue;
+								}
+								JsonArray arr = obj2.getJsonArray("values");
+								if (null == arr) {
+									badRecords3++;
+									continue;
+								}
+								for (int k = 0; k < arr.size(); k++) {
+									JsonObject obj3 = arr.getJsonObject(k);
+									if (arr.size() == 1) {
+										String value = obj3.getString("value");
+										addIncr(dictionaries.get(j), value);
+										break;
+									}
+									if (obj3.containsKey("isPrimary")) {
+										//System.out.println("Found isPrimary");
+										if ("true".equals(obj3.getString("isPrimary"))) {
+											String value = obj3.getString("value");
+											addIncr(dictionaries.get(j), value);
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+					catch (JsonException e) {
+						badRecords++;
+					}
+					id++;
+				}
+				br.close();
+				System.out.println("Input File: " + inputFileName);
+				System.out.println("No. of records seen: " + id);
+				System.out.println("No. of records with Invalid JSON: " + badRecords);
+				System.out.println("No. of records with missing product attributes: " + badRecords1);
+				for (int j = 0; j < attributeNames.length; j++) {
+					String attributeName = attributeNames[j];
+					System.out.println("No. of records with missing " + attributeName + ": " + badRecords2[j]);
+				}
+				System.out.println("No. of records with missing values: " + badRecords3);
+			}
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		dumpMaps(outputFileNames, dictionaries);
 	}
 	
 	private static void createDictionary(String inputFileName, String outputFileName, String attributeName) throws FileNotFoundException {
@@ -826,6 +928,9 @@ public class Parser {
 			int id = 0;
 			String line;
 			while((line = br.readLine()) != null) {
+				if (id % 100000 == 0) {
+					System.out.println("Processed " + id + " records");
+				}
 				String[] vals = line.split("\t");
 				String itemJson = vals[0];
 				try {
@@ -868,14 +973,13 @@ public class Parser {
 					badRecords++;
 				}
 				id++;
-				//if (id > 2) break;
 			}
 			br.close();
 			System.out.println("No. of records seen: " + id);
 			System.out.println("No. of records with Invalid JSON: " + badRecords);
 			System.out.println("No. of records with missing product attributes: " + badRecords1);
-			System.out.println("No. of records with missing brand: " + badRecords2);
-			System.out.println("No. of records with missing brand values: " + badRecords3);
+			System.out.println("No. of records with missing " + attributeName + ": " + badRecords2);
+			System.out.println("No. of records with missing values: " + badRecords3);
 		}
 		catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -1746,10 +1850,49 @@ public class Parser {
 		String[] attributesToExtract6 = {"Laptop Compartment Dimensions", "Print Color", "Page Yield"};
 		String[] attributesToExtract7 = {"MPN", "UPC"};
 		//prepareSampleForStudents(outputPath, attributesToExclude, attributesToExtract6);
-		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
-		String outputFileName = "/u/s/a/sanjibkd/Downloads/brand_dictionary.txt";
+//		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
+//		String outputFileName = "/u/s/a/sanjibkd/Downloads/material_dictionary.txt";
+//		try {
+//			createDictionary(inputFileName, outputFileName, "material");
+//		}
+//		catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		}
+		
+		String[] inputFileNames = {"/media/My Book/sanjib/walmart_catalog/electronics/elec.txt"};
+		//String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/elec_catalog_1.txt"};
+//		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/package_quantity_dictionary.txt",
+//									"/u/s/a/sanjibkd/Downloads/product_type_dictionary.txt",
+//									"/u/s/a/sanjibkd/Downloads/product_category_dictionary.txt",
+//									"/u/s/a/sanjibkd/Downloads/manufacturer_part_number_dictionary.txt",
+//									"/u/s/a/sanjibkd/Downloads/upc_dictionary.txt"};
+//		String[] attributeNames = {"package_quantity", "product_type", "product_category", "manufacturer_part_number", "upc"};
+		
+		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/electronics_brand_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_manufacturer_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_model_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_color_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_actual_color_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_length_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_width_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_height_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_weight_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_size_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/electronics_material_dictionary.txt"};
+		String[] attributeNames = {"brand",
+									"manufacturer",
+									"model",
+									"color",
+									"actual_color",
+									"assembled_product_length",
+									"assembled_product_width",
+									"assembled_product_height",
+									"assembled_product_weight",
+									"size",
+									"material"};
+
 		try {
-			createDictionary(inputFileName, outputFileName, "brand");
+			createDictionaries(inputFileNames, outputFileNames, attributeNames);
 		}
 		catch (FileNotFoundException e) {
 			e.printStackTrace();
