@@ -798,21 +798,29 @@ public class Parser {
 		}
 		dictionary.put(key, value + 1);
 	}
-	
+
+	private static void addIncr(Map<String, Integer> dictionary, String key, int increment) {
+		int value = 0;
+		if (dictionary.containsKey(key)) {
+			value = dictionary.get(key);
+		}
+		dictionary.put(key, value + increment);
+	}
+
 	private static void displayMap(Map<String, Integer> map) {
 		for (String k: map.keySet()) {
 			int v = map.get(k);
 			System.out.println(k + ": " + v);
 		}
 	}
-	
+
 	private static void dumpMaps(String[] outputFileNames, List<Map<String, Integer>> maps) throws FileNotFoundException {
 		for (int i = 0; i < outputFileNames.length; i++) {
 			System.out.println("Output dictionary file: " + outputFileNames[i]);
 			dumpMap(outputFileNames[i], maps.get(i));
 		}
 	}
-	
+
 	private static void dumpMap(String outputFileName, Map<String, Integer> map) throws FileNotFoundException {
 		PrintWriter pw = new PrintWriter(outputFileName);
 		for (String k: map.keySet()) {
@@ -822,7 +830,7 @@ public class Parser {
 		pw.close();
 		System.out.println("Size of dictionary: " + map.size());
 	}
-	
+
 	private static void createDictionaries(String[] inputFileNames, String[] outputFileNames, String[] attributeNames) throws FileNotFoundException {
 		List<Map<String, Integer>> dictionaries = new ArrayList<Map<String, Integer>>(attributeNames.length);
 		for (int i = 0; i < attributeNames.length; i++) {
@@ -916,7 +924,7 @@ public class Parser {
 		}
 		dumpMaps(outputFileNames, dictionaries);
 	}
-	
+
 	private static void createDictionary(String inputFileName, String outputFileName, String attributeName) throws FileNotFoundException {
 		Map<String, Integer> dictionary = new HashMap<String, Integer>(); // attribute value -> count
 		try {
@@ -966,7 +974,7 @@ public class Parser {
 									break;
 								}
 							}
- 						}
+						}
 					}
 				}
 				catch (JsonException e) {
@@ -991,14 +999,14 @@ public class Parser {
 		}
 		dumpMap(outputFileName,dictionary);
 	}
-	
+
 	private static Map<String, Integer> sortByValue (Map<String, Integer> map) {
 		ValueComparator vc =  new ValueComparator(map);
 		Map<String,Integer> sortedMap = new TreeMap<String,Integer>(vc);
 		sortedMap.putAll(map);
 		return sortedMap;
 	}
-	
+
 	private static boolean extract(JsonObject obj, String[] attributesToExclude) {
 		for (String s: attributesToExclude) {
 			if (obj.containsKey(s)) {
@@ -1140,7 +1148,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static Set<String> doNotExtract(JsonObject obj, String[] attributesToExclude) {
 		Set<String> attributesPresent = new HashSet<String>();
 		for (String s: attributesToExclude) {
@@ -1150,7 +1158,7 @@ public class Parser {
 		}
 		return attributesPresent;
 	}
-	
+
 	private static void prepareSampleForStudents(String outputPath, String[] attributesToExclude, String[] attributesToExtract) {
 		String dataFilePath = "/u/s/a/sanjibkd/Downloads/sanjib_electronics_train_325.txt";
 		try {
@@ -1176,44 +1184,44 @@ public class Parser {
 					JsonObject obj1 = reader1.readObject();
 					//Set<String> attributesPresent = doNotExtract(obj1, attributesToExtract);
 					//if (attributesPresent.size() != attributesToExtract.length) {
-						Set<String> keySet1 = new HashSet<String>(obj1.keySet());
-						for (String s: attributesToignore) {
-							keySet1.remove(s);
-						}
-//						for (String s: attributesToExclude) {
-//							keySet1.remove(s);
-//						}
-//						for (String s: attributesPresent) {
-//							keySet1.add(s);
-//						}
-						//System.out.println("Obj1 Keyset: " + obj1.keySet());
-						//		    		for (String key: attributesToignore) {
-						//		    			obj1.remove(key);
-						//		    		}
-						//System.out.println("No. of keys: " + obj.keySet());
-						bw.write(id + ". Walmart product (item id:" + id1 + ")");
+					Set<String> keySet1 = new HashSet<String>(obj1.keySet());
+					for (String s: attributesToignore) {
+						keySet1.remove(s);
+					}
+					//						for (String s: attributesToExclude) {
+					//							keySet1.remove(s);
+					//						}
+					//						for (String s: attributesPresent) {
+					//							keySet1.add(s);
+					//						}
+					//System.out.println("Obj1 Keyset: " + obj1.keySet());
+					//		    		for (String key: attributesToignore) {
+					//		    			obj1.remove(key);
+					//		    		}
+					//System.out.println("No. of keys: " + obj.keySet());
+					bw.write(id + ". Walmart product (item id:" + id1 + ")");
+					bw.newLine();
+					//bw.write("****************************************");
+					//bw.newLine();
+					for (String key: keySet1) {
+						JsonValue value = obj1.get(key);
+						bw.write(key + ": " + value);
 						bw.newLine();
-						//bw.write("****************************************");
-						//bw.newLine();
-						for (String key: keySet1) {
-							JsonValue value = obj1.get(key);
-							bw.write(key + ": " + value);
-							bw.newLine();
-							bw.newLine();
-						}
-						for (String s: attributesToExtract) {
-//							if (attributesPresent.contains(s)) {
-//								continue;
-//							}
-							bw.write(s.toUpperCase() + ": ");
-							bw.newLine();
-						}
-						bw.write("*********************************************************************************************************");
 						bw.newLine();
-//						bw.write("*******************************************************");
-//						bw.newLine();
+					}
+					for (String s: attributesToExtract) {
+						//							if (attributesPresent.contains(s)) {
+						//								continue;
+						//							}
+						bw.write(s.toUpperCase() + ": ");
 						bw.newLine();
-						id++;		
+					}
+					bw.write("*********************************************************************************************************");
+					bw.newLine();
+					//						bw.write("*******************************************************");
+					//						bw.newLine();
+					bw.newLine();
+					id++;		
 					//}
 				}
 				catch (JsonParsingException e) {
@@ -1229,51 +1237,51 @@ public class Parser {
 					JsonObject obj2 = reader2.readObject();
 					//Set<String> attributesPresent = doNotExtract(obj2, attributesToExtract);
 					//if (attributesPresent.size() != attributesToExtract.length) {
-						Set<String> keySet2 = new HashSet<String>(obj2.keySet());
-						for (String s: attributesToignore) {
-							keySet2.remove(s);
-						}
-//						for (String s: attributesToExclude) {
-//							keySet2.remove(s);
-//						}
-//						for (String s: attributesPresent) {
-//							keySet2.add(s);
-//						}
-						//	    		System.out.println("obj2 keyset: " + obj2.keySet());
-						//	    		System.out.println("obj2 contains Item ID: " + obj2.containsKey("Item ID"));
-						//	    		System.out.println(obj2.get("Item ID"));
-						//	    		for (String key: attributesToignore) {
-						//	    			obj2.remove(key);
-						//	    		}
-						//System.out.println(obj2.keySet());
-						bw.write(id + ". Vendor product (item id:" + id2 + ")");
+					Set<String> keySet2 = new HashSet<String>(obj2.keySet());
+					for (String s: attributesToignore) {
+						keySet2.remove(s);
+					}
+					//						for (String s: attributesToExclude) {
+					//							keySet2.remove(s);
+					//						}
+					//						for (String s: attributesPresent) {
+					//							keySet2.add(s);
+					//						}
+					//	    		System.out.println("obj2 keyset: " + obj2.keySet());
+					//	    		System.out.println("obj2 contains Item ID: " + obj2.containsKey("Item ID"));
+					//	    		System.out.println(obj2.get("Item ID"));
+					//	    		for (String key: attributesToignore) {
+					//	    			obj2.remove(key);
+					//	    		}
+					//System.out.println(obj2.keySet());
+					bw.write(id + ". Vendor product (item id:" + id2 + ")");
+					bw.newLine();
+					//bw.write("***************************************");
+					//bw.newLine();
+					for (String key: keySet2) {
+						JsonValue value = obj2.get(key);
+						bw.write(key + ": " + value);
 						bw.newLine();
-						//bw.write("***************************************");
-						//bw.newLine();
-						for (String key: keySet2) {
-							JsonValue value = obj2.get(key);
-							bw.write(key + ": " + value);
-							bw.newLine();
-							bw.newLine();
-						}
-						for (String s: attributesToExtract) {
-//							if (attributesPresent.contains(s)) {
-//								continue;
-//							}
-							bw.write(s.toUpperCase() + ": ");
-							bw.newLine();
-						}
-						bw.write("*********************************************************************************************************");
 						bw.newLine();
-//						bw.write("*******************************************************");
-//						bw.newLine();
+					}
+					for (String s: attributesToExtract) {
+						//							if (attributesPresent.contains(s)) {
+						//								continue;
+						//							}
+						bw.write(s.toUpperCase() + ": ");
 						bw.newLine();
-						String label = vals[5];
-						//				System.out.println("pairId: " + pairId);
-						//				System.out.println("id1: " + id1);
-						//				System.out.println("id2: " + id2);
-						//				System.out.println("label: " + label);
-						id++;
+					}
+					bw.write("*********************************************************************************************************");
+					bw.newLine();
+					//						bw.write("*******************************************************");
+					//						bw.newLine();
+					bw.newLine();
+					String label = vals[5];
+					//				System.out.println("pairId: " + pairId);
+					//				System.out.println("id1: " + id1);
+					//				System.out.println("id2: " + id2);
+					//				System.out.println("label: " + label);
+					id++;
 					//}
 				}
 				catch(JsonParsingException e) {
@@ -1301,7 +1309,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void printTuple(BufferedWriter bw, JsonObject obj) throws IOException {
 		Set<String> keySet = new HashSet<String>(obj.keySet());
 		for (String s: attributesToignore) {
@@ -1314,7 +1322,7 @@ public class Parser {
 			bw.newLine();
 		}
 	}
-	
+
 	/*
 	private static void prepareTuplePairsForStudents(String outputPath) {
 		String dataFilePath = "/u/s/a/sanjibkd/Downloads/sanjib_electronics_train_325.txt";
@@ -1343,7 +1351,7 @@ public class Parser {
 				try {
 					JsonObject obj1 = reader1.readObject();
 					JsonObject obj2 = reader2.readObject();
-					
+
 					bw.write("Product pair #" + (pairsSeen + 1));
 					bw.newLine();
 					bw.write("Walmart product (item id:" + id1 + ")");
@@ -1354,7 +1362,7 @@ public class Parser {
 					bw.newLine();
 					printTuple(bw, obj1);
 					bw.newLine();
-					
+
 					bw.write("*********************************************************************************************************");
 					bw.newLine();
 //						bw.write("*******************************************************");
@@ -1370,7 +1378,7 @@ public class Parser {
 					badRecords++;
 				}
 				try {
-					
+
 					//Set<String> attributesPresent = doNotExtract(obj2, attributesToExtract);
 					//if (attributesPresent.size() != attributesToExtract.length) {
 						Set<String> keySet2 = new HashSet<String>(obj2.keySet());
@@ -1445,8 +1453,8 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	*/
-	
+	 */
+
 	private static void parseRuleEvals() {
 		String ruleEvalsFilePath = "ruleEvalsCopy.txt";
 		String rulesPath = "ruleEvals.csv";
@@ -1811,7 +1819,258 @@ public class Parser {
 	}
 	 */
 
-	
+	private static void mergeDictionaries(String[] inputFileNames, String outputFileName) throws IOException {
+		Map<String, Integer> dictionary = new HashMap<String, Integer>();
+		for (int i = 0; i < inputFileNames.length; i++) {
+			String inputFileName = inputFileNames[i];
+			BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+			int badRecords = 0;
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] vals = line.split("\\t");
+				if (vals.length != 2) {
+					badRecords++;
+					continue;
+				}
+				String key = vals[0].trim();
+				int value = Integer.parseInt(vals[1].trim());
+				addIncr(dictionary, key, value);
+			}
+			System.out.println("No. of bad records in file " + inputFileName + ": " + badRecords);
+			br.close();
+		}
+		dumpMap(outputFileName, dictionary);
+	}
+
+	private static void runMergeDictionaries() {
+		String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/art_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/baby_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/cm_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bi_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/cpo_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/ee_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/null_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/gcgc_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/re_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/fb_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/sw_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/tickets_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/tg_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/tla_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/ps_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/hb_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/crafts_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/so_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/vpa_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/mipa_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/os_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/th_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/jgw_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/default_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/csa_upc_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_upc_dictionary.txt",
+		"/u/s/a/sanjibkd/Downloads/hg_upc_dictionary.txt"};
+		String outputFileName = "/u/s/a/sanjibkd/Downloads/all_upc_dictionary.txt";
+		try {
+			mergeDictionaries(inputFileNames, outputFileName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void getItems(String inputFileName, String outputFileName, Set<String> itemIds) throws FileNotFoundException {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+			PrintWriter pw = new PrintWriter(outputFileName);
+			int badRecords = 0; // invalid JSON
+			int badRecords1 = 0; // no "product_attributes"
+			int badRecords2 = 0; // no "item_id"
+			int badRecords3 = 0; // no "values"
+			int id = 0;
+			String line;
+			while((line = br.readLine()) != null) {
+				if (id % 100000 == 0) {
+					System.out.println("Processed " + id + " records");
+				}
+				String[] vals = line.split("\t");
+				String itemJson = vals[0];
+				try {
+					JsonReader reader = Json.createReader(new StringReader(itemJson));
+					JsonObject obj = reader.readObject();
+					if (obj.containsKey("product_attributes")) {
+						//System.out.println("Found product_attributes");
+						JsonObject obj1 = obj.getJsonObject("product_attributes");
+						if (null == obj1) {
+							badRecords1++;
+							id++;
+							continue;
+						}
+						JsonObject obj2 = obj1.getJsonObject("item_id");
+						if (null == obj2) {
+							badRecords2++;
+							id++;
+							continue;
+						}
+						JsonArray arr = obj2.getJsonArray("values");
+						if (null == arr) {
+							badRecords3++;
+							id++;
+							continue;
+						}
+						for (int i = 0; i < arr.size(); i++) {
+							JsonObject obj3 = arr.getJsonObject(i);
+							if (arr.size() == 1) {
+								String value = obj3.getString("value");
+								if (itemIds.contains(value)) {
+									System.out.println("Found item_id " + value);
+									pw.println(itemJson);
+								}
+								break;
+							}
+							if (obj3.containsKey("isPrimary")) {
+								//System.out.println("Found isPrimary");
+								if ("true".equals(obj3.getString("isPrimary"))) {
+									String value = obj3.getString("value");
+									if (itemIds.contains(value)) {
+										System.out.println("Found item_id " + value);
+										pw.println(itemJson);
+									}
+									break;
+								}
+							}
+						}
+					}
+				}
+				catch (JsonException e) {
+					badRecords++;
+				}
+				id++;
+			}
+			br.close();
+			pw.close();
+			System.out.println("No. of records seen: " + id);
+			System.out.println("No. of records with Invalid JSON: " + badRecords);
+			System.out.println("No. of records with missing product attributes: " + badRecords1);
+			System.out.println("No. of records with missing item_id: " + badRecords2);
+			System.out.println("No. of records with missing values: " + badRecords3);
+		}
+		catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void runGetItems() {
+		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
+		String outputFileName = "/u/s/a/sanjibkd/Downloads/enriched_walmart_items.txt";
+		String[] itemIds = {"4217002", "5347115", "8245516", "8586825", "9193948", "3377768",
+				"4217014", "9447294", "3356833", "3377763", "3377767", "3356835",
+				"8586819", "9225287", "9225291", "8586826", "9225276", "4805973",
+				"9225280", "9225292", "4216995", "9875796", "9225273", "9225293",
+				"3356836", "3371668", "4217000", "8586822", "9225274", "4217003",
+				"9225275", "3985006", "3356838", "5996481", "5996470", "9863777",
+				"9225288", "3356840", "9208106", "9225277", "9722003", "10073803",
+				"10910315", "11068335", "11082496", "11084238", "11988059", "11988076",
+				"11997515", "12180028", "12180070", "12180103", "12181608", "12181609",
+				"12181620", "12181700", "12181705", "12182239", "12182374", "12182400",
+				"12182846", "12183204", "932031", "1234894", "3756896", "4025874",
+				"7754443", "9189660", "9225261", "9871188", "12184525", "12184565",
+				"872051", "2585639", "3387612", "3576485", "12186203", "12186211",
+				"12186335", "4664464", "5723587", "12187451", "12187705", "12187816",
+				"12187871", "12342530", "12343007", "12343021", "9225253", "2445355",
+				"2585638", "2685981", "17771102", "12360588", "12361423", "7964947"};
+		Set<String> itemIdsToLookup = new HashSet<String>();
+		for (String s: itemIds) {
+			itemIdsToLookup.add(s);
+		}
+		try {
+			getItems(inputFileName, outputFileName, itemIdsToLookup);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void writeTable(String fileName, Map<String, String> table, String header, Set<String> attributes) throws IOException {
+		BufferedWriter tableBw = new BufferedWriter(new FileWriter(fileName, true));
+		CSVPrinter tablePrinter = new CSVPrinter(tableBw, CSVFormat.DEFAULT.toBuilder().withRecordSeparator("\n").build());
+		tablePrinter.print(header);
+		tablePrinter.println();
+		for (Map.Entry<String, String> entry: table.entrySet()) {
+			String id = entry.getKey();
+			String rec = entry.getValue();
+			printCsvRecord(id, rec, attributes, tablePrinter);
+		}
+		tablePrinter.close();
+		tableBw.close();
+	}
+
+	private static void createTablesFromLabeledPairs(String labeledPairsFile,
+			String table1FileName, String table2FileName, String goldFile, String[] attributeNames) throws IOException {
+
+		Map<String, String> tableA = new HashMap<String, String>();
+		Map<String, String> tableB = new HashMap<String, String>();
+
+		BufferedReader br = new BufferedReader(new FileReader(labeledPairsFile));
+		BufferedWriter goldBw = new BufferedWriter(new FileWriter(goldFile, true));
+		CSVPrinter goldPrinter = new CSVPrinter(goldBw, CSVFormat.DEFAULT.toBuilder().withRecordSeparator("\n").build());
+		goldPrinter.print(GOLD_HEADER);
+		goldPrinter.println();
+		int badRecords = 0;
+		int pairsSeen = 0;
+		int id = 1;
+		String line;
+		while((line = br.readLine()) != null) {
+			String[] vals = line.split("\\?");
+			String pairId = vals[0];
+			String id1 = vals[1];
+			String item1json = vals[2];
+			String id2 = vals[3];
+			String item2json = vals[4];
+			String label = vals[5];
+			if (!tableA.containsKey(id1)) {
+				tableA.put(id1, item1json);
+			}
+			if (!tableB.containsKey(id2)) {
+				tableB.put(id2, item2json);
+			}
+			goldPrinter.print(pairId);
+			goldPrinter.print(id1);
+			goldPrinter.print(id2);
+			goldPrinter.print(label);
+			goldPrinter.println();
+		}
+		br.close();
+		goldPrinter.close();
+		goldBw.close();
+		
+		Set<String> attributes = new LinkedHashSet<String>();
+		for (String s: attributeNames) {
+			attributes.add(s);
+		}
+		//get header for the tables
+		String tableHeader = getHeader(attributes);
+		writeTable(table1FileName, tableA, tableHeader, attributes);
+		writeTable(table2FileName, tableB, tableHeader, attributes);
+	}
+
+	private static void runCreateTablesFromLabeledPairs() {
+		String labeledPairsFile = "";
+		String table1FileName = "";
+		String table2FileName = "";
+		String goldFileName = "";
+		String[] attributeNames = {"Product Name", "Product Short Description", "Product Long Description",
+									"Product Type", "Brand", "Manufacturer", "Model", "Color", "Actual Color",
+									"Package Quantity", "Assembled Product Length", "Assembled Product Width",
+									"Assembled Product Height", "Assembled Product Weight", };
+	}
+
 	public static void main(String[] args) {
 		//parseItems();
 		//parseLabeledItemPairs();
@@ -1850,52 +2109,64 @@ public class Parser {
 		String[] attributesToExtract6 = {"Laptop Compartment Dimensions", "Print Color", "Page Yield"};
 		String[] attributesToExtract7 = {"MPN", "UPC"};
 		//prepareSampleForStudents(outputPath, attributesToExclude, attributesToExtract6);
-//		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
-//		String outputFileName = "/u/s/a/sanjibkd/Downloads/material_dictionary.txt";
-//		try {
-//			createDictionary(inputFileName, outputFileName, "material");
-//		}
-//		catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		}
-		
-		String[] inputFileNames = {"/media/My Book/sanjib/walmart_catalog/electronics/elec.txt"};
-		//String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/elec_catalog_1.txt"};
-//		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/package_quantity_dictionary.txt",
-//									"/u/s/a/sanjibkd/Downloads/product_type_dictionary.txt",
-//									"/u/s/a/sanjibkd/Downloads/product_category_dictionary.txt",
-//									"/u/s/a/sanjibkd/Downloads/manufacturer_part_number_dictionary.txt",
-//									"/u/s/a/sanjibkd/Downloads/upc_dictionary.txt"};
-//		String[] attributeNames = {"package_quantity", "product_type", "product_category", "manufacturer_part_number", "upc"};
-		
-		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/electronics_brand_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_manufacturer_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_model_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_color_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_actual_color_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_length_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_width_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_height_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_assembled_product_weight_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_size_dictionary.txt",
-				"/u/s/a/sanjibkd/Downloads/electronics_material_dictionary.txt"};
-		String[] attributeNames = {"brand",
-									"manufacturer",
-									"model",
-									"color",
-									"actual_color",
-									"assembled_product_length",
-									"assembled_product_width",
-									"assembled_product_height",
-									"assembled_product_weight",
-									"size",
-									"material"};
+		//		String inputFileName = "/media/My Book/sanjib/walmart_catalog/electronics/elec.txt";
+		//		String outputFileName = "/u/s/a/sanjibkd/Downloads/material_dictionary.txt";
+		//		try {
+		//			createDictionary(inputFileName, outputFileName, "material");
+		//		}
+		//		catch (FileNotFoundException e) {
+		//			e.printStackTrace();
+		//		}
 
-		try {
-			createDictionaries(inputFileNames, outputFileNames, attributeNames);
-		}
-		catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		String[] inputFileNames = {"/media/My Book/sanjib/walmart_catalog/bmm.txt"};
+		//		String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/elec_catalog_1.txt", "/u/s/a/sanjibkd/Downloads/elec_catalog_2.txt"};
+		//		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/package_quantity_dictionary.txt",
+		//									"/u/s/a/sanjibkd/Downloads/product_type_dictionary.txt",
+		//									"/u/s/a/sanjibkd/Downloads/product_category_dictionary.txt",
+		//									"/u/s/a/sanjibkd/Downloads/manufacturer_part_number_dictionary.txt",
+		//									"/u/s/a/sanjibkd/Downloads/upc_dictionary.txt"};
+		//		String[] attributeNames = {"package_quantity", "product_type", "product_category", "manufacturer_part_number", "upc"};
+
+		String[] outputFileNames = {"/u/s/a/sanjibkd/Downloads/bmm_brand_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_manufacturer_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_model_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_color_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_actual_color_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_assembled_product_length_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_assembled_product_width_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_assembled_product_height_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_assembled_product_weight_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_size_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_material_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_package_quantity_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_product_type_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_product_category_dictionary.txt",
+				"/u/s/a/sanjibkd/Downloads/bmm_manufacturer_part_number_dictionary.txt",
+		"/u/s/a/sanjibkd/Downloads/bmm_upc_dictionary.txt"};
+		String[] attributeNames = {"brand",
+				"manufacturer",
+				"model",
+				"color",
+				"actual_color",
+				"assembled_product_length",
+				"assembled_product_width",
+				"assembled_product_height",
+				"assembled_product_weight",
+				"size",
+				"material",
+				"package_quantity",
+				"product_type",
+				"product_category",
+				"manufacturer_part_number",
+		"upc"};
+
+		//		try {
+		//			createDictionaries(inputFileNames, outputFileNames, attributeNames);
+		//		}
+		//		catch (FileNotFoundException e) {
+		//			e.printStackTrace();
+		//		}
+		runMergeDictionaries();
+		//runGetItems();
 	}
 }
