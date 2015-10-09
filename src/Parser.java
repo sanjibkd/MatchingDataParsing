@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1000,13 +1001,15 @@ public class Parser {
 		dumpMap(outputFileName,dictionary);
 	}
 
+	/*
 	private static Map<String, Integer> sortByValue (Map<String, Integer> map) {
 		ValueComparator vc =  new ValueComparator(map);
 		Map<String,Integer> sortedMap = new TreeMap<String,Integer>(vc);
 		sortedMap.putAll(map);
 		return sortedMap;
 	}
-
+	 */
+	
 	private static boolean extract(JsonObject obj, String[] attributesToExclude) {
 		for (String s: attributesToExclude) {
 			if (obj.containsKey(s)) {
@@ -2005,7 +2008,13 @@ public class Parser {
 		for (Map.Entry<String, String> entry: table.entrySet()) {
 			String id = entry.getKey();
 			String rec = entry.getValue();
-			printCsvRecord(id, rec, attributes, tablePrinter);
+			try {
+				printCsvRecord(id, rec, attributes, tablePrinter);
+			}
+			catch (JsonParsingException e) {
+				System.out.println("id: " + id);
+				e.printStackTrace();
+			}
 		}
 		tablePrinter.close();
 		tableBw.close();
@@ -2024,11 +2033,10 @@ public class Parser {
 		goldPrinter.println();
 		int badRecords = 0;
 		int pairsSeen = 0;
-		int id = 1;
+		int pairId = 1;
 		String line;
 		while((line = br.readLine()) != null) {
 			String[] vals = line.split("\\?");
-			String pairId = vals[0];
 			String id1 = vals[1];
 			String item1json = vals[2];
 			String id2 = vals[3];
@@ -2043,8 +2051,14 @@ public class Parser {
 			goldPrinter.print(pairId);
 			goldPrinter.print(id1);
 			goldPrinter.print(id2);
-			goldPrinter.print(label);
+			if ("MATCH".equals(label)) {
+				goldPrinter.print(1);
+			}
+			else {
+				goldPrinter.print(0);
+			}
 			goldPrinter.println();
+			pairId++;
 		}
 		br.close();
 		goldPrinter.close();
@@ -2061,16 +2075,83 @@ public class Parser {
 	}
 
 	private static void runCreateTablesFromLabeledPairs() {
-		String labeledPairsFile = "";
-		String table1FileName = "";
-		String table2FileName = "";
-		String goldFileName = "";
+		String labeledPairsFile = "/Users/sanjib/Downloads/sample_elec_pairs.txt";
+		String table1FileName = "/Users/sanjib/Downloads/walmart.csv";
+		String table2FileName = "/Users/sanjib/Downloads/vendor.csv";
+		String goldFileName = "/Users/sanjib/Downloads/labeled_325.csv";
 		String[] attributeNames = {"Product Name", "Product Short Description", "Product Long Description",
 									"Product Type", "Brand", "Manufacturer", "Model", "Color", "Actual Color",
 									"Package Quantity", "Assembled Product Length", "Assembled Product Width",
-									"Assembled Product Height", "Assembled Product Weight", };
+									"Assembled Product Height", "Assembled Product Weight", "Size", "Material",
+									"Screen Size", "Laptop Compartment Dimensions", "Print Color", "Page Yield",
+									"Manufacturer Part Number", "UPC"};
+		try {
+			createTablesFromLabeledPairs(labeledPairsFile, table1FileName, table2FileName, goldFileName, attributeNames);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
+	private static void collateExtractedFile(String inputFileName, String outputFileName, String[] attributeNames, String tableName) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+		Set<String> attributes = new HashSet<String>();
+		Map<String, Map<String, String>> table = new LinkedHashMap<String, Map<String, String>>();
+		for (String s: attributeNames) {
+			attributes.add(s);
+		}
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (line.contains(tableName + " product")) {
+				String[] vals = line.split(":");
+				String itemId = vals[1].substring(0, vals[1].length()-1);
+				Map<String, String> itemMap = new HashMap<String, String>();
+				String newLine;
+				while (!(newLine = br.readLine()).startsWith("***")) {
+					String[] newVals = newLine.split(": ");
+					if (newVals.length >= 2) {
+						if (attributes.contains(newVals[0])) {
+							String v = newVals[1].trim();
+							itemMap.put(newVals[0], v);
+						}
+					}
+				}
+				table.put(itemId, itemMap);
+			}
+		}
+		br.close();
+		System.out.println("Size of table: " + table.size());
+		for (String itemId: table.keySet()) {
+			System.out.print(itemId + ": ");
+			Map<String, String> itemMap = table.get(itemId);
+			for (String k: itemMap.keySet()) {
+				String v = itemMap.get(k);
+				System.out.print(k + ": " + v + ", ");
+			}
+			System.out.println();
+		}
+	}
+	
+	private static void runCollateExtractedFile() {
+		String inputFileName = "/u/s/a/sanjibkd/Downloads/784_IS/7.txt";
+		String outputFile1Name = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_extracted.txt";
+		String outputFile2Name = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_extracted.txt";
+		
+		String[] attributeNames = {"BRAND", "MANUFACTURER", "MODEL", "SCREEN SIZE", "COLOR",
+				"PACKAGE QUANTITY", "LENGTH", "WIDTH", "HEIGHT", "SIZE", "WEIGHT", "MATERIAL",
+				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD", "MPN", "UPC"};
+		String table1Name = "Walmart";
+		String table2Name = "Vendor";
+		try {
+			collateExtractedFile(inputFileName, outputFile1Name, attributeNames, table1Name);
+			//collateExtractedFile(inputFileName, outputFile2Name, attributeNames, table2Name);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void main(String[] args) {
 		//parseItems();
 		//parseLabeledItemPairs();
@@ -2166,7 +2247,9 @@ public class Parser {
 		//		catch (FileNotFoundException e) {
 		//			e.printStackTrace();
 		//		}
-		runMergeDictionaries();
+		//runMergeDictionaries();
 		//runGetItems();
+		//runCreateTablesFromLabeledPairs();
+		runCollateExtractedFile();
 	}
 }
