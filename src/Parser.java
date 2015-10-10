@@ -108,6 +108,20 @@ public class Parser {
 		}
 	}
 
+	private static void printCsvRecord(String id1, Map<String, String> itemMap, String[] attributes, CSVPrinter printer) {
+		try {
+			printer.print(id1);
+			for (String s: attributes) {
+				String value = itemMap.get(s);
+				printer.print(value);
+			}
+			printer.println();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private static void parseLabeledItemPairs() {
 		String dataFilePath = "/Users/sdas7/Downloads/sample_electronics.csv";
 		String tableAPath = "A.csv";
@@ -2020,6 +2034,25 @@ public class Parser {
 		tableBw.close();
 	}
 
+	private static void writeTable(String fileName, Map<String, Map<String, String>> table, String header, String[] attributes) throws IOException {
+		BufferedWriter tableBw = new BufferedWriter(new FileWriter(fileName, true));
+		CSVPrinter tablePrinter = new CSVPrinter(tableBw, CSVFormat.DEFAULT.toBuilder().withRecordSeparator("\n").build());
+		tablePrinter.print(header);
+		tablePrinter.println();
+		for (String id: table.keySet()) {
+			Map<String, String> itemMap = table.get(id);
+			try {
+				printCsvRecord(id, itemMap, attributes, tablePrinter);
+			}
+			catch (JsonParsingException e) {
+				System.out.println("id: " + id);
+				e.printStackTrace();
+			}
+		}
+		tablePrinter.close();
+		tableBw.close();
+	}
+	
 	private static void createTablesFromLabeledPairs(String labeledPairsFile,
 			String table1FileName, String table2FileName, String goldFile, String[] attributeNames) throws IOException {
 
@@ -2133,6 +2166,52 @@ public class Parser {
 		}
 	}
 	
+	private static void collateExtractedFiles(String[] inputFileNames, String outputFileName, String[] attributeNames, String tableName) throws IOException {
+		Map<String, Map<String, String>> table = new LinkedHashMap<String, Map<String, String>>();
+		Set<String> attributes = new LinkedHashSet<String>();
+		for (String s: attributeNames) {
+			attributes.add(s);
+		}
+		for (String inputFileName: inputFileNames) {
+			BufferedReader br = new BufferedReader(new FileReader(inputFileName));
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.contains(tableName + " product")) {
+					String[] vals = line.split(":");
+					String itemId = vals[1].substring(0, vals[1].length()-1);
+					Map<String, String> itemMap = table.get(itemId);
+					if (!table.containsKey(itemId)) {
+						itemMap = new HashMap<String, String>();
+					}
+					String newLine;
+					while (!(newLine = br.readLine()).startsWith("***")) {
+						String[] newVals = newLine.split(": ");
+						if (newVals.length >= 2) {
+							if (attributes.contains(newVals[0])) {
+								String v = newVals[1].trim();
+								itemMap.put(newVals[0], v);
+							}
+						}
+					}
+					table.put(itemId, itemMap);
+				}
+			}
+			br.close();
+		}
+		System.out.println("Size of table: " + table.size());
+		for (String itemId: table.keySet()) {
+			System.out.print(itemId + ": ");
+			Map<String, String> itemMap = table.get(itemId);
+			for (String k: itemMap.keySet()) {
+				String v = itemMap.get(k);
+				System.out.print(k + ": " + v + ", ");
+			}
+			System.out.println();
+		}
+		String tableHeader = getHeader(attributes);
+		writeTable(outputFileName, table, tableHeader, attributeNames);
+	}
+	
 	private static void runCollateExtractedFile() {
 		String inputFileName = "/u/s/a/sanjibkd/Downloads/784_IS/7.txt";
 		String outputFile1Name = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_extracted.txt";
@@ -2150,6 +2229,51 @@ public class Parser {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private static void runCollateExtractedFiles() {
+		String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/784_IS/1.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/2.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/3.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/4.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/5.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/6.txt",
+									"/u/s/a/sanjibkd/Downloads/784_IS/7.txt"};
+		String outputFile1Name = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_extracted.txt";
+		String outputFile2Name = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_extracted.txt";
+		
+		String[] attributeNames = {"BRAND", "MANUFACTURER", "MODEL", "SCREEN SIZE", "COLOR",
+				"PACKAGE QUANTITY", "LENGTH", "WIDTH", "HEIGHT", "SIZE", "WEIGHT", "MATERIAL",
+				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD"};
+		
+		String table1Name = "Walmart";
+		String table2Name = "Vendor";
+		try {
+			collateExtractedFiles(inputFileNames, outputFile2Name, attributeNames, table2Name);
+			//collateExtractedFile(inputFileName, outputFile2Name, attributeNames, table2Name);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void combineFiles(String originalFileName, String collatedFileName, String enrichedFileName) throws IOException {
+		Set<String> attributes = new LinkedHashSet<String>();
+		BufferedReader br1 = new BufferedReader(new FileReader(originalFileName));
+		BufferedReader br2 = new BufferedReader(new FileReader(collatedFileName));
+		String header1 = br1.readLine();
+		String header2 = br2.readLine();
+		String[] vals = header1.split(",");
+		for (String s: vals) {
+			attributes.add(s);
+		}
+		vals = header1.split(",");
+		for (String s: vals) {
+			attributes.add(s);
+		}
+		System.out.println(attributes.size());
+		br1.close();
+		br2.close();
 	}
 	
 	public static void main(String[] args) {
@@ -2250,6 +2374,6 @@ public class Parser {
 		//runMergeDictionaries();
 		//runGetItems();
 		//runCreateTablesFromLabeledPairs();
-		runCollateExtractedFile();
+		runCollateExtractedFiles();
 	}
 }
