@@ -98,7 +98,10 @@ public class Parser {
 			printer.print(id1);
 			Map<String, String> attribValuePairs = parseJsonBlob(attr1, attributes);
 			for (String s: attributes) {
-				String value = attribValuePairs.get(s);
+				String value = attribValuePairs.get(s).trim();
+				if (value.startsWith("[\"") && value.endsWith("\"]")) {
+					value = value.substring(2, value.length() - 2);
+				}
 				printer.print(value);
 			}
 			printer.println();
@@ -2108,10 +2111,10 @@ public class Parser {
 	}
 
 	private static void runCreateTablesFromLabeledPairs() {
-		String labeledPairsFile = "/Users/sanjib/Downloads/sample_elec_pairs.txt";
-		String table1FileName = "/Users/sanjib/Downloads/walmart.csv";
-		String table2FileName = "/Users/sanjib/Downloads/vendor.csv";
-		String goldFileName = "/Users/sanjib/Downloads/labeled_325.csv";
+		String labeledPairsFile = "/u/s/a/sanjibkd/Downloads/784_IS/sample_elec_pairs.txt";
+		String table1FileName = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_clean.csv";
+		String table2FileName = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_clean.csv";
+		String goldFileName = "/u/s/a/sanjibkd/Downloads/784_IS/labeled_325_clean.csv";
 		String[] attributeNames = {"Product Name", "Product Short Description", "Product Long Description",
 									"Product Type", "Brand", "Manufacturer", "Model", "Color", "Actual Color",
 									"Package Quantity", "Assembled Product Length", "Assembled Product Width",
@@ -2232,19 +2235,19 @@ public class Parser {
 	}
 
 	private static void runCollateExtractedFiles() {
-		String[] inputFileNames = {"/u/s/a/sanjibkd/Downloads/784_IS/1.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/2.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/3.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/4.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/5.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/6.txt",
-									"/u/s/a/sanjibkd/Downloads/784_IS/7.txt"};
-		String outputFile1Name = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_extracted.txt";
-		String outputFile2Name = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_extracted.txt";
+		String[] inputFileNames = {"/Users/patron/Downloads/784_IS/1_SKD.txt",
+									"/Users/patron/Downloads/784_IS/2_SKD.txt",
+									"/Users/patron/Downloads/784_IS/3_SKD.txt",
+									"/Users/patron/Downloads/784_IS/4_SKD.txt",
+									"/Users/patron/Downloads/784_IS/5_SKD.txt",
+									"/Users/patron/Downloads/784_IS/6_SKD.txt",
+									"/Users/patron/Downloads/784_IS/7_SKD.txt"};
+		String outputFile1Name = "/Users/patron/Downloads/784_IS/walmart_extracted_skd.txt";
+		String outputFile2Name = "/Users/patron/Downloads/784_IS/vendor_extracted_skd.txt";
 		
 		String[] attributeNames = {"BRAND", "MANUFACTURER", "MODEL", "SCREEN SIZE", "COLOR",
 				"PACKAGE QUANTITY", "LENGTH", "WIDTH", "HEIGHT", "SIZE", "WEIGHT", "MATERIAL",
-				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD"};
+				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD", "MPN", "UPC_X"};
 		
 		String table1Name = "Walmart";
 		String table2Name = "Vendor";
@@ -2261,19 +2264,121 @@ public class Parser {
 		Set<String> attributes = new LinkedHashSet<String>();
 		BufferedReader br1 = new BufferedReader(new FileReader(originalFileName));
 		BufferedReader br2 = new BufferedReader(new FileReader(collatedFileName));
-		String header1 = br1.readLine();
-		String header2 = br2.readLine();
-		String[] vals = header1.split(",");
-		for (String s: vals) {
-			attributes.add(s);
+		CSVParser p1 = new CSVParser(br1);
+		CSVParser p2 = new CSVParser(br2);
+		List<CSVRecord> r1 = p1.getRecords();
+		List<CSVRecord> r2 = p2.getRecords();
+		
+		CSVRecord header1 = r1.get(0);
+		CSVRecord header2 = r2.get(0);
+		for (int i = 1; i < header1.size(); i++) {
+			attributes.add(header1.get(i));
 		}
-		vals = header1.split(",");
-		for (String s: vals) {
-			attributes.add(s);
+		for (int i = 1; i < header2.size(); i++) {
+			attributes.add(header2.get(i));
 		}
 		System.out.println(attributes.size());
+		for (String s: attributes) {
+			System.out.println(s);
+		}
+		String[] attributeNames = new String[attributes.size()];
+		int j = 0;
+		for (String s: attributes) {
+			attributeNames[j++] = s;
+		}
+		String tableHeader = getHeader(attributes);
+		Map<String, Map<String, String>> table = new HashMap<String, Map<String, String>>();
+		for (int i = 1; i < r1.size(); i++) {
+			CSVRecord r = r1.get(i);
+			String id = r.get(0);
+			Map<String, String> itemMap;
+			if (!table.containsKey(id)) {
+				itemMap = new HashMap<String, String>();
+			}
+			else {
+				itemMap = table.get(id);
+			}
+			for (int k = 1; k < r.size(); k++) {
+				itemMap.put(header1.get(k), r.get(k));
+			}
+			table.put(id, itemMap);
+		}
+		for (int i = 1; i < r2.size(); i++) {
+			CSVRecord r = r2.get(i);
+			String id = r.get(0);
+			Map<String, String> itemMap;
+			if (!table.containsKey(id)) {
+				itemMap = new HashMap<String, String>();
+			}
+			else {
+				itemMap = table.get(id);
+			}
+			for (int k = 1; k < r.size(); k++) {
+				String v = r.get(k);
+				String key = header2.get(k);
+				if ("X".equalsIgnoreCase(v)) {
+					if ("BRAND_X".equals(key)) {
+						v = itemMap.get("Brand");
+					}
+					else if ("MANUFACTURER_X".equals(key)) {
+						v = itemMap.get("Manufacturer");
+					}
+					else if ("MODEL_X".equals(key)) {
+						v = itemMap.get("Model");
+					}
+					else if ("SCREEN_SIZE_X".equals(key)) {
+						v = itemMap.get("Screen_Size");
+					}
+					else if ("COLOR_X".equals(key)) {
+						v = itemMap.get("Color");
+					}
+					else if ("PACKAGE_QUANTITY_X".equals(key)) {
+						v = itemMap.get("Package_Quantity");
+					}
+					else if ("LENGTH_X".equals(key)) {
+						v = itemMap.get("Assembled_Product_Length");
+					}
+					else if ("WIDTH_X".equals(key)) {
+						v = itemMap.get("Assembled_Product_Width");
+					}
+					else if ("HEIGHT_X".equals(key)) {
+						v = itemMap.get("Assembled_Product_Height");
+					}
+					else if ("WEIGHT_X".equals(key)) {
+						v = itemMap.get("Assembled_Product_Weight");
+					}
+					else if ("SIZE_X".equals(key)) {
+						v = itemMap.get("Size");
+					}
+					else if ("LAPTOP_COMPARTMENT_DIMENSIONS_X".equals(key)) {
+						v = itemMap.get("Laptop_Compartment_Dimensions");
+					}
+					else if ("PRINT_COLOR_X".equals(key)) {
+						v = itemMap.get("Print_Color");
+					}
+					else if ("PAGE_YIELD_X".equals(key)) {
+						v = itemMap.get("Page Yield");
+					}
+				}
+				itemMap.put(key, v);
+			}
+			table.put(id, itemMap);
+		}
+		writeTable(enrichedFileName, table, tableHeader, attributeNames);
 		br1.close();
 		br2.close();
+	}
+	
+	public static void runCombineFiles() {
+		String originalFileName = "/Users/patron/Downloads/784_IS/vendor_clean.csv";
+		String collatedFileName = "/Users/patron/Downloads/784_IS/vendor_extracted_skd.txt";
+		String enrichedFileName = "/Users/patron/Downloads/784_IS/vendor_enriched_clean_skd.csv";
+		try {
+			combineFiles(originalFileName, collatedFileName, enrichedFileName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -2374,6 +2479,7 @@ public class Parser {
 		//runMergeDictionaries();
 		//runGetItems();
 		//runCreateTablesFromLabeledPairs();
-		runCollateExtractedFiles();
+		//runCollateExtractedFiles();
+		runCombineFiles();
 	}
 }
