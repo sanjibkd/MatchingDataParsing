@@ -2370,9 +2370,9 @@ public class Parser {
 	}
 	
 	public static void runCombineFiles() {
-		String originalFileName = "/Users/patron/Downloads/784_IS/vendor_clean.csv";
-		String collatedFileName = "/Users/patron/Downloads/784_IS/vendor_extracted_skd.txt";
-		String enrichedFileName = "/Users/patron/Downloads/784_IS/vendor_enriched_clean_skd.csv";
+		String originalFileName = "/Users/patron/Downloads/784_IS/walmart_clean.csv";
+		String collatedFileName = "/Users/patron/Downloads/784_IS/walmart_extracted_skd_1.txt";
+		String enrichedFileName = "/Users/patron/Downloads/784_IS/walmart_enriched_clean_skd_1.csv";
 		try {
 			combineFiles(originalFileName, collatedFileName, enrichedFileName);
 		} catch (IOException e) {
