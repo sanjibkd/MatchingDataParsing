@@ -21,8 +21,10 @@ import java.util.TreeMap;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonBuilderFactory;
 import javax.json.JsonException;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 import javax.json.JsonWriter;
@@ -2381,6 +2383,83 @@ public class Parser {
 		}
 	}
 	
+	public static String suppress(String itemJson,
+			Set<String> attributesToSuppress) {
+		int badJson = 0;
+		try {
+			JsonReader reader = Json.createReader(new StringReader(itemJson));
+			JsonObject obj = reader.readObject();
+			JsonObjectBuilder builder = Json.createObjectBuilder();
+			for (String s: obj.keySet()) {
+				if (attributesToSuppress.contains(s)) {
+					continue;
+				}
+				builder.add(s, obj.get(s));
+			}
+			return builder.build().toString();
+		}
+		catch (JsonException e) {
+			badJson++;
+		}
+		System.out.println("Bad Item Json: " + badJson);
+		return "";
+	}
+	
+	public static String suppressAttributesInLine(String line,
+			Set<String> attributesToSuppress) {
+		StringBuilder sb = new StringBuilder();
+		String[] vals = line.split("\\?");
+		String item1 = suppress(vals[2], attributesToSuppress);
+		if (item1.isEmpty()) {
+			return "";
+		}
+		String item2 = suppress(vals[4], attributesToSuppress);
+		if (item1.isEmpty()) {
+			return "";
+		}
+		sb.append(vals[0]); // pair id
+		sb.append("?");
+		sb.append(vals[1]); // id1
+		sb.append("?");
+		sb.append(item1); // item1
+		sb.append("?");
+		sb.append(vals[3]); // id2 
+		sb.append("?");
+		sb.append(item2); // item2
+		sb.append("?");
+		sb.append(vals[5]); // label
+		return sb.toString();
+	}
+			
+	public static void suppressAttributes(String inFileName, String outFileName,
+			Set<String> attributesToSuppress) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(inFileName));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFileName));
+		String line = null;
+		int badPairs = 0;
+		while ((line = br.readLine()) != null) {
+			String newLine = suppressAttributesInLine(line, attributesToSuppress);
+			if (newLine.isEmpty()) {
+				badPairs++;
+				continue;
+			}
+			bw.write(newLine);
+			bw.newLine();
+		}
+		br.close();
+		bw.close();
+		System.out.println("Bad Pairs: " + badPairs);
+	}
+	
+	public static void runSuppressAttributes() throws IOException {
+		String inFileName = "/Users/patron/Downloads/784_IS/elec_pairs_10.txt";
+		String outFileName = "/Users/patron/Downloads/784_IS/elec_pairs_no_mpn_upc_10.txt";
+		Set<String> attributesToSuppress = new HashSet<String>();
+		attributesToSuppress.add("Manufacturer Part Number");
+		attributesToSuppress.add("UPC");
+		suppressAttributes(inFileName, outFileName, attributesToSuppress);
+	}
+	
 	public static void main(String[] args) {
 		//parseItems();
 		//parseLabeledItemPairs();
@@ -2480,6 +2559,12 @@ public class Parser {
 		//runGetItems();
 		//runCreateTablesFromLabeledPairs();
 		//runCollateExtractedFiles();
-		runCombineFiles();
+		//runCombineFiles();
+		try {
+			runSuppressAttributes();
+		}
+		catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
