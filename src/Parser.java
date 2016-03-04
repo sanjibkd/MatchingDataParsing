@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -2406,14 +2407,14 @@ public class Parser {
 	}
 	
 	public static String suppressAttributesInLine(String line,
-			Set<String> attributesToSuppress) {
+			Set<String> attributesToSuppress1, Set<String> attributesToSuppress2) {
 		StringBuilder sb = new StringBuilder();
 		String[] vals = line.split("\\?");
-		String item1 = suppress(vals[2], attributesToSuppress);
+		String item1 = suppress(vals[2], attributesToSuppress1);
 		if (item1.isEmpty()) {
 			return "";
 		}
-		String item2 = suppress(vals[4], attributesToSuppress);
+		String item2 = suppress(vals[4], attributesToSuppress2);
 		if (item1.isEmpty()) {
 			return "";
 		}
@@ -2432,13 +2433,15 @@ public class Parser {
 	}
 			
 	public static void suppressAttributes(String inFileName, String outFileName,
-			Set<String> attributesToSuppress) throws IOException {
+			Set<String> attributesToSuppress1, Set<String> attributesToSuppress2)
+					throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(inFileName));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outFileName));
 		String line = null;
 		int badPairs = 0;
 		while ((line = br.readLine()) != null) {
-			String newLine = suppressAttributesInLine(line, attributesToSuppress);
+			String newLine = suppressAttributesInLine(line, attributesToSuppress1,
+					attributesToSuppress2);
 			if (newLine.isEmpty()) {
 				badPairs++;
 				continue;
@@ -2451,15 +2454,95 @@ public class Parser {
 		System.out.println("Bad Pairs: " + badPairs);
 	}
 	
-	public static void runSuppressAttributes() throws IOException {
-		String inFileName = "/Users/patron/Downloads/784_IS/elec_pairs_10.txt";
-		String outFileName = "/Users/patron/Downloads/784_IS/elec_pairs_no_mpn_upc_10.txt";
-		Set<String> attributesToSuppress = new HashSet<String>();
-		attributesToSuppress.add("Manufacturer Part Number");
-		attributesToSuppress.add("UPC");
-		suppressAttributes(inFileName, outFileName, attributesToSuppress);
+	public static List<String> getLines(String fileName) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
+		String line;
+		List<String> lines = new ArrayList<String>();
+		while ((line = br.readLine()) != null) {
+			lines.add(line);
+		}
+		br.close();
+		return lines;
 	}
 	
+ 	public static void runSuppressAttributes() throws IOException {
+		String inFileName = "/Users/Sanjib/784_IS/elec_pairs_non_stage1.txt";
+		String outFileName = "/Users/Sanjib/784_IS/elec_pairs_non_stage1_no_brand_keys.txt";
+		Set<String> attributesToSuppress1 = new HashSet<String>();
+		Set<String> attributesToSuppress2 = new HashSet<String>();
+		attributesToSuppress1.add("Brand");
+		attributesToSuppress1.add("Manufacturer");
+		attributesToSuppress2.add("Brand");
+		attributesToSuppress2.add("Manufacturer");
+		attributesToSuppress2.add("Manufacturer Part Number");
+		attributesToSuppress2.add("UPC");
+		attributesToSuppress2.add("GTIN");
+		attributesToSuppress2.add("ISBN-13");
+		suppressAttributes(inFileName, outFileName, attributesToSuppress1, attributesToSuppress2);
+	}
+	
+ 	public static Set<String> getIds(String fileName) throws IOException {
+ 		BufferedReader br = new BufferedReader(new FileReader(fileName));
+		String line;
+		Set<String> ids = new HashSet<String>();
+		while ((line = br.readLine()) != null) {
+			ids.add(line.split("\\?")[0]);
+		}
+		br.close();
+		return ids;
+ 	}
+ 	
+ 	public static void writeDiff(String inFile1, String inFile2, String outFile) throws IOException {
+ 		Set<String> ids = getIds(inFile2);
+ 		BufferedReader br = new BufferedReader(new FileReader(inFile1));
+ 		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		String line;
+		while ((line = br.readLine()) != null) {
+			String id = line.split("\\?")[0];
+			if (!ids.contains(id)) {
+				bw.write(line);
+				bw.newLine();
+			}
+		}
+		br.close();
+		bw.close();
+ 	}
+ 	
+ 	public static void writeLines(List<String> lines, String[] outFiles, int[] sizes) throws IOException {
+ 		int l = outFiles.length;
+ 		BufferedWriter[] writers = new BufferedWriter[l];
+ 		for (int i = 0; i < l; i++) {
+ 			writers[i] = new BufferedWriter(new FileWriter(outFiles[i]));
+ 		}
+ 		int indx = 0;
+ 		int to = sizes[0]; 
+ 		for (int i = 0; i < lines.size(); i++) {
+ 			if (i == to) {
+ 				to = i + sizes[++indx];
+ 			}
+ 			writers[indx].write(lines.get(i));
+ 			writers[indx].newLine();
+ 		}
+ 		for (int i = 0; i < l; i++) {
+ 			writers[i].close();
+ 		}
+ 	}
+ 	
+ 	public static void runStage2() throws IOException {
+ 		String inFile1 = "/Users/Sanjib/784_IS/elec_pairs_40K.txt";
+ 		String inFile2 = "/Users/Sanjib/784_IS/elec_pairs_stage1.txt";
+ 		String outFile1 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1.txt";
+ 		String inFile3 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1_no_brand_keys.txt";
+ 		writeDiff(inFile1, inFile2, outFile1);
+ 		runSuppressAttributes();
+ 		List<String> lines = getLines(inFile3);
+ 		Collections.shuffle(lines);
+ 		String[] outFiles = {"/Users/Sanjib/784_IS/elec_pairs_stage2.txt",
+ 							"/Users/Sanjib/784_IS/elec_pairs_non_stage1_2.txt"};
+ 		int[] sizes = {10000, 10000};
+ 		writeLines(lines, outFiles, sizes);
+ 	}
+ 	
 	public static void main(String[] args) {
 		//parseItems();
 		//parseLabeledItemPairs();
@@ -2561,7 +2644,7 @@ public class Parser {
 		//runCollateExtractedFiles();
 		//runCombineFiles();
 		try {
-			runSuppressAttributes();
+			runStage2();
 		}
 		catch(IOException e) {
 			e.printStackTrace();
