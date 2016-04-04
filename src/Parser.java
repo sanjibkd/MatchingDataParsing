@@ -127,7 +127,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void parseLabeledItemPairs() {
 		String dataFilePath = "/Users/sdas7/Downloads/sample_electronics.csv";
 		String tableAPath = "A.csv";
@@ -1029,7 +1029,7 @@ public class Parser {
 		return sortedMap;
 	}
 	 */
-	
+
 	private static boolean extract(JsonObject obj, String[] attributesToExclude) {
 		for (String s: attributesToExclude) {
 			if (obj.containsKey(s)) {
@@ -2058,7 +2058,7 @@ public class Parser {
 		tablePrinter.close();
 		tableBw.close();
 	}
-	
+
 	private static void createTablesFromLabeledPairs(String labeledPairsFile,
 			String table1FileName, String table2FileName, String goldFile, String[] attributeNames) throws IOException {
 
@@ -2102,7 +2102,7 @@ public class Parser {
 		br.close();
 		goldPrinter.close();
 		goldBw.close();
-		
+
 		Set<String> attributes = new LinkedHashSet<String>();
 		for (String s: attributeNames) {
 			attributes.add(s);
@@ -2119,18 +2119,18 @@ public class Parser {
 		String table2FileName = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_clean.csv";
 		String goldFileName = "/u/s/a/sanjibkd/Downloads/784_IS/labeled_325_clean.csv";
 		String[] attributeNames = {"Product Name", "Product Short Description", "Product Long Description",
-									"Product Type", "Brand", "Manufacturer", "Model", "Color", "Actual Color",
-									"Package Quantity", "Assembled Product Length", "Assembled Product Width",
-									"Assembled Product Height", "Assembled Product Weight", "Size", "Material",
-									"Screen Size", "Laptop Compartment Dimensions", "Print Color", "Page Yield",
-									"Manufacturer Part Number", "UPC"};
+				"Product Type", "Brand", "Manufacturer", "Model", "Color", "Actual Color",
+				"Package Quantity", "Assembled Product Length", "Assembled Product Width",
+				"Assembled Product Height", "Assembled Product Weight", "Size", "Material",
+				"Screen Size", "Laptop Compartment Dimensions", "Print Color", "Page Yield",
+				"Manufacturer Part Number", "UPC"};
 		try {
 			createTablesFromLabeledPairs(labeledPairsFile, table1FileName, table2FileName, goldFileName, attributeNames);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private static void collateExtractedFile(String inputFileName, String outputFileName, String[] attributeNames, String tableName) throws IOException {
@@ -2171,7 +2171,7 @@ public class Parser {
 			System.out.println();
 		}
 	}
-	
+
 	private static void collateExtractedFiles(String[] inputFileNames, String outputFileName, String[] attributeNames, String tableName) throws IOException {
 		Map<String, Map<String, String>> table = new LinkedHashMap<String, Map<String, String>>();
 		Set<String> attributes = new LinkedHashSet<String>();
@@ -2217,12 +2217,12 @@ public class Parser {
 		String tableHeader = getHeader(attributes);
 		writeTable(outputFileName, table, tableHeader, attributeNames);
 	}
-	
+
 	private static void runCollateExtractedFile() {
 		String inputFileName = "/u/s/a/sanjibkd/Downloads/784_IS/7.txt";
 		String outputFile1Name = "/u/s/a/sanjibkd/Downloads/784_IS/walmart_extracted.txt";
 		String outputFile2Name = "/u/s/a/sanjibkd/Downloads/784_IS/vendor_extracted.txt";
-		
+
 		String[] attributeNames = {"BRAND", "MANUFACTURER", "MODEL", "SCREEN SIZE", "COLOR",
 				"PACKAGE QUANTITY", "LENGTH", "WIDTH", "HEIGHT", "SIZE", "WEIGHT", "MATERIAL",
 				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD", "MPN", "UPC"};
@@ -2239,19 +2239,19 @@ public class Parser {
 
 	private static void runCollateExtractedFiles() {
 		String[] inputFileNames = {"/Users/patron/Downloads/784_IS/1_SKD.txt",
-									"/Users/patron/Downloads/784_IS/2_SKD.txt",
-									"/Users/patron/Downloads/784_IS/3_SKD.txt",
-									"/Users/patron/Downloads/784_IS/4_SKD.txt",
-									"/Users/patron/Downloads/784_IS/5_SKD.txt",
-									"/Users/patron/Downloads/784_IS/6_SKD.txt",
-									"/Users/patron/Downloads/784_IS/7_SKD.txt"};
+				"/Users/patron/Downloads/784_IS/2_SKD.txt",
+				"/Users/patron/Downloads/784_IS/3_SKD.txt",
+				"/Users/patron/Downloads/784_IS/4_SKD.txt",
+				"/Users/patron/Downloads/784_IS/5_SKD.txt",
+				"/Users/patron/Downloads/784_IS/6_SKD.txt",
+		"/Users/patron/Downloads/784_IS/7_SKD.txt"};
 		String outputFile1Name = "/Users/patron/Downloads/784_IS/walmart_extracted_skd.txt";
 		String outputFile2Name = "/Users/patron/Downloads/784_IS/vendor_extracted_skd.txt";
-		
+
 		String[] attributeNames = {"BRAND", "MANUFACTURER", "MODEL", "SCREEN SIZE", "COLOR",
 				"PACKAGE QUANTITY", "LENGTH", "WIDTH", "HEIGHT", "SIZE", "WEIGHT", "MATERIAL",
 				"LAPTOP COMPARTMENT DIMENSIONS", "PRINT COLOR", "PAGE YIELD", "MPN", "UPC_X"};
-		
+
 		String table1Name = "Walmart";
 		String table2Name = "Vendor";
 		try {
@@ -2262,7 +2262,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void combineFiles(String originalFileName, String collatedFileName, String enrichedFileName) throws IOException {
 		Set<String> attributes = new LinkedHashSet<String>();
 		BufferedReader br1 = new BufferedReader(new FileReader(originalFileName));
@@ -2271,7 +2271,7 @@ public class Parser {
 		CSVParser p2 = new CSVParser(br2);
 		List<CSVRecord> r1 = p1.getRecords();
 		List<CSVRecord> r2 = p2.getRecords();
-		
+
 		CSVRecord header1 = r1.get(0);
 		CSVRecord header2 = r2.get(0);
 		for (int i = 1; i < header1.size(); i++) {
@@ -2371,7 +2371,7 @@ public class Parser {
 		br1.close();
 		br2.close();
 	}
-	
+
 	public static void runCombineFiles() {
 		String originalFileName = "/Users/patron/Downloads/784_IS/walmart_clean.csv";
 		String collatedFileName = "/Users/patron/Downloads/784_IS/walmart_extracted_skd_1.txt";
@@ -2383,7 +2383,7 @@ public class Parser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static String suppress(String itemJson,
 			Set<String> attributesToSuppress) {
 		int badJson = 0;
@@ -2404,6 +2404,21 @@ public class Parser {
 		}
 		System.out.println("Bad Item Json: " + badJson);
 		return "";
+	}
+
+	public static boolean hasValidJson(String itemJson) {
+		if (itemJson == null || itemJson.isEmpty()) {
+			return false;
+		}
+		try {
+			JsonReader reader = Json.createReader(new StringReader(itemJson));
+			JsonObject obj = reader.readObject();
+			if (obj != null)
+				return true;
+		}
+		catch (JsonException e) {
+		}
+		return false;
 	}
 	
 	public static String suppressAttributesInLine(String line,
@@ -2431,7 +2446,7 @@ public class Parser {
 		sb.append(vals[5]); // label
 		return sb.toString();
 	}
-			
+
 	public static void suppressAttributes(String inFileName, String outFileName,
 			Set<String> attributesToSuppress1, Set<String> attributesToSuppress2)
 					throws IOException {
@@ -2453,7 +2468,7 @@ public class Parser {
 		bw.close();
 		System.out.println("Bad Pairs: " + badPairs);
 	}
-	
+
 	public static List<String> getLines(String fileName) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(fileName));
 		String line;
@@ -2464,8 +2479,24 @@ public class Parser {
 		br.close();
 		return lines;
 	}
+
+	public static List<String> getLinesWithValidJson(String fileName) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
+		String line;
+		List<String> lines = new ArrayList<String>();
+		while ((line = br.readLine()) != null) {
+			if (!line.isEmpty()) {
+				String[] vals = line.split("\\?");
+				if (vals.length == 6 && hasValidJson(vals[2]) && hasValidJson(vals[4])) {
+					lines.add(line);
+				}
+			}
+		}
+		br.close();
+		return lines;
+	}
 	
- 	public static void runSuppressAttributes() throws IOException {
+	public static void runSuppressAttributes() throws IOException {
 		String inFileName = "/Users/Sanjib/784_IS/elec_pairs_non_stage1.txt";
 		String outFileName = "/Users/Sanjib/784_IS/elec_pairs_non_stage1_no_brand_keys.txt";
 		Set<String> attributesToSuppress1 = new HashSet<String>();
@@ -2480,9 +2511,9 @@ public class Parser {
 		attributesToSuppress2.add("ISBN-13");
 		suppressAttributes(inFileName, outFileName, attributesToSuppress1, attributesToSuppress2);
 	}
-	
- 	public static Set<String> getIds(String fileName) throws IOException {
- 		BufferedReader br = new BufferedReader(new FileReader(fileName));
+
+	public static Set<String> getIds(String fileName) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(fileName));
 		String line;
 		Set<String> ids = new HashSet<String>();
 		while ((line = br.readLine()) != null) {
@@ -2490,12 +2521,25 @@ public class Parser {
 		}
 		br.close();
 		return ids;
- 	}
- 	
- 	public static void writeDiff(String inFile1, String inFile2, String outFile) throws IOException {
- 		Set<String> ids = getIds(inFile2);
- 		BufferedReader br = new BufferedReader(new FileReader(inFile1));
- 		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+	}
+
+	public static Set<String> getIds(String[] fileNames) throws IOException {
+		Set<String> ids = new HashSet<String>();
+		for (String fileName: fileNames) {
+			BufferedReader br = new BufferedReader(new FileReader(fileName));
+			String line;
+			while ((line = br.readLine()) != null) {
+				ids.add(line.split("\\?")[0]);
+			}
+			br.close();
+		}
+		return ids;
+	}
+
+	public static void writeDiff(String inFile1, String inFile2, String outFile) throws IOException {
+		Set<String> ids = getIds(inFile2);
+		BufferedReader br = new BufferedReader(new FileReader(inFile1));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
 		String line;
 		while ((line = br.readLine()) != null) {
 			String id = line.split("\\?")[0];
@@ -2506,43 +2550,135 @@ public class Parser {
 		}
 		br.close();
 		bw.close();
- 	}
- 	
- 	public static void writeLines(List<String> lines, String[] outFiles, int[] sizes) throws IOException {
- 		int l = outFiles.length;
- 		BufferedWriter[] writers = new BufferedWriter[l];
- 		for (int i = 0; i < l; i++) {
- 			writers[i] = new BufferedWriter(new FileWriter(outFiles[i]));
- 		}
- 		int indx = 0;
- 		int to = sizes[0]; 
- 		for (int i = 0; i < lines.size(); i++) {
- 			if (i == to) {
- 				to = i + sizes[++indx];
- 			}
- 			writers[indx].write(lines.get(i));
- 			writers[indx].newLine();
- 		}
- 		for (int i = 0; i < l; i++) {
- 			writers[i].close();
- 		}
- 	}
- 	
- 	public static void runStage2() throws IOException {
- 		String inFile1 = "/Users/Sanjib/784_IS/elec_pairs_40K.txt";
- 		String inFile2 = "/Users/Sanjib/784_IS/elec_pairs_stage1.txt";
- 		String outFile1 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1.txt";
- 		String inFile3 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1_no_brand_keys.txt";
- 		writeDiff(inFile1, inFile2, outFile1);
- 		runSuppressAttributes();
- 		List<String> lines = getLines(inFile3);
- 		Collections.shuffle(lines);
- 		String[] outFiles = {"/Users/Sanjib/784_IS/elec_pairs_stage2.txt",
- 							"/Users/Sanjib/784_IS/elec_pairs_non_stage1_2.txt"};
- 		int[] sizes = {10000, 10000};
- 		writeLines(lines, outFiles, sizes);
- 	}
- 	
+	}
+
+	public static void writeDiff(String inFile, String[] excludeFiles, String outFile) throws IOException {
+		Set<String> ids = getIds(excludeFiles);
+		BufferedReader br = new BufferedReader(new FileReader(inFile));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		String line;
+		while ((line = br.readLine()) != null) {
+			String id = line.split("\\?")[0];
+			if (!ids.contains(id)) {
+				bw.write(line);
+				bw.newLine();
+			}
+		}
+		br.close();
+		bw.close();
+	}
+
+	public static void writeLines(List<String> lines, String[] outFiles, int[] sizes) throws IOException {
+		int l = outFiles.length;
+		BufferedWriter[] writers = new BufferedWriter[l];
+		for (int i = 0; i < l; i++) {
+			writers[i] = new BufferedWriter(new FileWriter(outFiles[i]));
+		}
+		int indx = 0;
+		int to = sizes[0]; 
+		for (int i = 0; i < lines.size(); i++) {
+			if (i == to) {
+				if (indx == l - 1) {
+					break;
+				}
+				to = i + sizes[++indx];
+			}
+			writers[indx].write(lines.get(i));
+			writers[indx].newLine();
+		}
+		for (int i = 0; i < l; i++) {
+			writers[i].close();
+		}
+	}
+
+	public static void runStage2() throws IOException {
+		String inFile1 = "/Users/Sanjib/784_IS/elec_pairs_40K.txt";
+		String inFile2 = "/Users/Sanjib/784_IS/elec_pairs_stage1.txt";
+		String outFile1 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1.txt";
+		String inFile3 = "/Users/Sanjib/784_IS/elec_pairs_non_stage1_no_brand_keys.txt";
+		writeDiff(inFile1, inFile2, outFile1);
+		runSuppressAttributes();
+		List<String> lines = getLines(inFile3);
+		Collections.shuffle(lines);
+		String[] outFiles = {"/Users/Sanjib/784_IS/elec_pairs_stage2.txt",
+		"/Users/Sanjib/784_IS/elec_pairs_non_stage1_2.txt"};
+		int[] sizes = {10000, 10000};
+		writeLines(lines, outFiles, sizes);
+	}
+
+	public static void anonymizeAndRemoveLabels(String inFile, String studFile, String taFile) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(inFile));
+		BufferedWriter bw1 = new BufferedWriter(new FileWriter(studFile));
+		BufferedWriter bw2 = new BufferedWriter(new FileWriter(taFile));
+		String line;
+		int anonPairId = 0;
+		int anonId1 = 0;
+		int anonId2 = 0;
+		while ((line = br.readLine()) != null) {
+			String[] vals = line.split("\\?");
+			if (vals.length == 6) {
+				bw1.write(String.valueOf(++anonPairId));
+				bw1.write("?");
+				bw1.write(String.valueOf(++anonId1));
+				bw1.write("?");
+				String item1 = vals[2];
+				bw1.write(item1);
+				bw1.write("?");
+				bw1.write(String.valueOf(++anonId2));
+				bw1.write("?");
+				String item2 = vals[4];
+				bw1.write(item2);
+				bw1.newLine();
+				String label = vals[5];
+				bw2.write(String.valueOf(anonPairId));
+				bw2.write(",");
+				bw2.write(label);
+				bw2.newLine();
+			}
+			else {
+				System.err.println("Bad pair");
+			}
+		}
+		br.close();
+		bw1.close();
+		bw2.close();
+	}
+	
+	public static void runStage3() throws IOException {
+		/*
+		String inFile = "/Users/patron/Downloads/784_IS/wgec_electronics_train.txt";
+		String[] excludeFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_40K.txt",
+								 "/Users/patron/Downloads/784_IS/elec_pairs_stage1.txt",
+								 "/Users/patron/Downloads/784_IS/elec_pairs_stage2.txt"
+								};
+		String outFile1 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen.txt";
+		writeDiff(inFile, excludeFiles, outFile1);
+		String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen_suppressed.txt";
+		Set<String> attributesToSuppress1 = new HashSet<String>();
+		Set<String> attributesToSuppress2 = new HashSet<String>();
+		attributesToSuppress1.add("Item ID");
+		attributesToSuppress2.add("Item ID");
+		attributesToSuppress2.add("Manufacturer Part Number");
+		attributesToSuppress2.add("UPC");
+		attributesToSuppress2.add("GTIN");
+		attributesToSuppress2.add("ISBN-13");
+		suppressAttributes(outFile1, outFile2, attributesToSuppress1, attributesToSuppress2);
+		
+		String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen_suppressed.txt";
+		List<String> lines = getLinesWithValidJson(outFile2);
+		Collections.shuffle(lines);
+		String[] outFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt",
+		"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt"};
+		int[] sizes = {10000, 10000};
+		writeLines(lines, outFiles, sizes);
+		*/
+		String[] outFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt",
+		"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt"};
+		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1.txt";
+		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_labels.txt";
+		anonymizeAndRemoveLabels(outFiles[0], studFile, taFile);
+	}
+	
 	public static void main(String[] args) {
 		//parseItems();
 		//parseLabeledItemPairs();
@@ -2644,7 +2780,7 @@ public class Parser {
 		//runCollateExtractedFiles();
 		//runCombineFiles();
 		try {
-			runStage2();
+			runStage3();
 		}
 		catch(IOException e) {
 			e.printStackTrace();
