@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -294,6 +295,7 @@ public class Parser {
 	}
 
 	private static void parseTrainTestItemPairs() {
+		/*
 		String trainFilePath = "/Users/sdas7/Downloads/elec_train_30k.csv";
 		String testFilePath = "/Users/sdas7/Downloads/elec_test_30K.csv";
 		String tableAPath = "walmart_el_30k.csv";
@@ -301,6 +303,15 @@ public class Parser {
 		String candsetPath = "wv_candset_el_30k.csv";
 		String trainPath = "train_el_30k.csv";
 		String testPath = "test_el_30k.csv";
+		*/
+		
+		String trainFilePath = "/Users/patron/Downloads/784_IS/elec_pairs_stage1.csv";
+		String testFilePath = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K_new.csv";
+		String tableAPath = "walmart_elec_new.csv";
+		String tableBPath = "vendor_elec_new.csv";
+		String candsetPath = "wv_candset_elec_new.csv";
+		String trainPath = "train_stage1_new.csv";
+		String testPath = "test_stage3_new.csv";
 
 		try {
 			CSVParser trainParser = new CSVParser(new FileReader(trainFilePath));
@@ -407,7 +418,7 @@ public class Parser {
 			int badTestPairs = 0;
 			for (int i = 0; i < testSize; i++) {
 				CSVRecord rec = testRecords.get(i);
-				int pairId = trainSize + i; // ignore the pairId coming from the data 
+				int pairId = trainSize + i + 1; // ignore the pairId coming from the data 
 				String id1 = rec.get(1).trim();
 				String attr1 = rec.get(2).trim();
 				String id2 = rec.get(3).trim();
@@ -2590,6 +2601,15 @@ public class Parser {
 			writers[i].close();
 		}
 	}
+	
+	public static void writeLines(List<String> lines, String outFile) throws IOException {
+		BufferedWriter writer = new BufferedWriter(new FileWriter(outFile));
+		for (String line: lines) {
+			writer.write(line);
+			writer.newLine();
+		}
+		writer.close();
+	}
 
 	public static void runStage2() throws IOException {
 		String inFile1 = "/Users/Sanjib/784_IS/elec_pairs_40K.txt";
@@ -2645,15 +2665,13 @@ public class Parser {
 	}
 	
 	public static void runStage3() throws IOException {
-		/*
-		String inFile = "/Users/patron/Downloads/784_IS/wgec_electronics_train.txt";
-		String[] excludeFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_40K.txt",
-								 "/Users/patron/Downloads/784_IS/elec_pairs_stage1.txt",
-								 "/Users/patron/Downloads/784_IS/elec_pairs_stage2.txt"
-								};
-		String outFile1 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen.txt";
+		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_40K.txt";
+		String[] excludeFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage1.txt",
+					 "/Users/patron/Downloads/784_IS/elec_pairs_stage2.txt"
+					};
+		String outFile1 = "/Users/patron/Downloads/784_IS/elec_pairs_40K_unseen.txt";
 		writeDiff(inFile, excludeFiles, outFile1);
-		String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen_suppressed.txt";
+		String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_40K_unseen_suppressed.txt";
 		Set<String> attributesToSuppress1 = new HashSet<String>();
 		Set<String> attributesToSuppress2 = new HashSet<String>();
 		attributesToSuppress1.add("Item ID");
@@ -2664,22 +2682,47 @@ public class Parser {
 		attributesToSuppress2.add("ISBN-13");
 		suppressAttributes(outFile1, outFile2, attributesToSuppress1, attributesToSuppress2);
 		
-		String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen_suppressed.txt";
+		//String outFile2 = "/Users/patron/Downloads/784_IS/elec_pairs_unseen_suppressed.txt";
 		List<String> lines = getLinesWithValidJson(outFile2);
 		Collections.shuffle(lines);
+		
+		//String[] outFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt",
+		//"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt"};
+		//int[] sizes = {10000, 10000};
+		//writeLines(lines, outFiles, sizes);
+		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K_new.txt";
+		writeLines(lines, outFile);
+		/*
 		String[] outFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt",
 		"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt"};
-		int[] sizes = {10000, 10000};
-		writeLines(lines, outFiles, sizes);
 		*/
-		String[] outFiles = {"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt",
-		"/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt"};
-		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1.txt";
-		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_labels.txt";
-		anonymizeAndRemoveLabels(outFiles[0], studFile, taFile);
+		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_new.txt";
+		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_labels_new.txt";
+		anonymizeAndRemoveLabels(outFile, studFile, taFile);
 	}
 	
-	public static void main(String[] args) {
+	public static void downsampleNegatives() throws IOException {
+		String inFile = "test_stage3.csv";
+		String outFile = "test_stage3_down2.csv";
+		BufferedReader br = new BufferedReader(new FileReader(inFile));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		String line;
+		Random rand = new Random();
+		double prob = 3793.0/6207.0;
+		while ((line = br.readLine()) != null) {
+			String[] vals = line.split(",");
+			String label = vals[3].trim();
+			if (label.equals("0") && rand.nextDouble() >= prob) {
+				continue;
+			}
+			bw.write(line);
+			bw.newLine();
+		}
+		br.close();
+		bw.close();
+	}
+	
+	public static void main(String[] args) throws IOException {
 		//parseItems();
 		//parseLabeledItemPairs();
 		//parseTrainTestItemPairs();
@@ -2779,11 +2822,14 @@ public class Parser {
 		//runCreateTablesFromLabeledPairs();
 		//runCollateExtractedFiles();
 		//runCombineFiles();
+		/*
 		try {
 			runStage3();
 		}
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+		*/
+		downsampleNegatives();
 	}
 }
