@@ -2649,11 +2649,13 @@ public class Parser {
 				String item2 = vals[4];
 				bw1.write(item2);
 				bw1.newLine();
-				String label = vals[5];
-				bw2.write(String.valueOf(anonPairId));
-				bw2.write(",");
-				bw2.write(label);
-				bw2.newLine();
+				String label = vals[5].trim();
+				if (!label.equalsIgnoreCase("UNKNOWN")) {
+					bw2.write(String.valueOf(anonPairId));
+					bw2.write(",");
+					bw2.write(label);
+					bw2.newLine();
+				}
 			}
 			else {
 				System.err.println("Bad pair");
@@ -2701,6 +2703,17 @@ public class Parser {
 		anonymizeAndRemoveLabels(outFile, studFile, taFile);
 	}
 	
+	public static void runStage4() throws IOException {
+		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K.txt";
+		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_shuffled.txt";
+		List<String> lines = getLines(inFile);
+		Collections.shuffle(lines);
+		writeLines(lines, outFile);
+		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_anon.txt";
+		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_labels.txt";
+		anonymizeAndRemoveLabels(outFile, studFile, taFile);
+	}
+	
 	public static void downsampleNegatives() throws IOException {
 		String inFile = "test_stage3.csv";
 		String outFile = "test_stage3_down2.csv";
@@ -2720,6 +2733,27 @@ public class Parser {
 		}
 		br.close();
 		bw.close();
+	}
+	
+	private static void replaceLabels(String inFile, String outFile) throws IOException {
+		BufferedReader br = new BufferedReader(new FileReader(inFile));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		String line;
+		int numLines = 0;
+		while ((line = br.readLine()) != null) {
+			String[] vals = line.split("\\?");
+			int l = vals.length;
+			for (int i = 0; i < l - 1; i++) {
+				bw.write(vals[i]);
+				bw.write("?");
+			}
+			bw.write("UNKNOWN");
+			bw.newLine();
+			numLines++;
+		}
+		br.close();
+		bw.close();
+		System.out.println("No. of lines: "  + numLines);
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -2830,6 +2864,12 @@ public class Parser {
 			e.printStackTrace();
 		}
 		*/
-		downsampleNegatives();
+		//downsampleNegatives();
+		/*
+		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt";
+		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K_noise.txt";
+		replaceLabels(inFile, outFile);
+		*/
+		runStage4();
 	}
 }
