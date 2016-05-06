@@ -2704,13 +2704,13 @@ public class Parser {
 	}
 	
 	public static void runStage4() throws IOException {
-		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K.txt";
-		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_shuffled.txt";
+		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage4_test2_20K.txt";
+		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage4_test2_20K_shuffled.txt";
 		List<String> lines = getLines(inFile);
 		Collections.shuffle(lines);
 		writeLines(lines, outFile);
-		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_anon.txt";
-		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_20K_labels.txt";
+		String studFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage4_test2_20K_anon.txt";
+		String taFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage4_test2_20K_labels.txt";
 		anonymizeAndRemoveLabels(outFile, studFile, taFile);
 	}
 	
@@ -2866,8 +2866,8 @@ public class Parser {
 		*/
 		//downsampleNegatives();
 		/*
-		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K.txt";
-		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test1_10K_noise.txt";
+		String inFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K.txt";
+		String outFile = "/Users/patron/Downloads/784_IS/elec_pairs_stage3_test2_10K_noise.txt";
 		replaceLabels(inFile, outFile);
 		*/
 		runStage4();
